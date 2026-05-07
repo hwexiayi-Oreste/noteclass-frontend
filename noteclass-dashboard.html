@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NoteClass — Tableau de bord</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #1A237E; --navy-dark: #0D1754; --navy-light: #283593;
+      --emerald: #00897B; --emerald-light: #00BFA5;
+      --white: #FFFFFF; --gray-light: #F5F5F5; --gray: #ECEFF1;
+      --text: #1C1C2E; --text-muted: #607D8B; --border: #E8EDF2;
+      --sidebar-w: 240px;
+    }
+    html, body { height: 100%; }
+    body { font-family: 'DM Sans', sans-serif; background: #EEF2F7; color: var(--text); display: flex; min-height: 100vh; }
+    .sidebar { width: var(--sidebar-w); background: var(--navy-dark); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transition: transform 0.3s; }
+    .sidebar-logo { padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .sidebar-logo a { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 900; color: var(--white); text-decoration: none; }
+    .sidebar-logo a span { color: var(--emerald-light); }
+    .sidebar-logo p { font-size: 0.7rem; color: rgba(255,255,255,0.35); margin-top: 0.2rem; }
+    .sidebar-nav { flex: 1; padding: 1.25rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; overflow-y: auto; }
+    .nav-section-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); padding: 0.75rem 0.5rem 0.4rem; }
+    .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.9rem; border-radius: 10px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: var(--white); }
+    .nav-item.active { background: rgba(0,191,165,0.15); color: var(--emerald-light); }
+    .nav-icon { font-size: 1.05rem; width: 20px; flex-shrink: 0; }
+    .sidebar-footer { padding: 1rem 0.75rem; border-top: 1px solid rgba(255,255,255,0.07); }
+    .prof-card { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer; transition: background 0.2s; }
+    .prof-card:hover { background: rgba(255,255,255,0.09); }
+    .prof-avatar { width: 36px; height: 36px; background: linear-gradient(135deg, var(--emerald), var(--emerald-light)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: var(--white); flex-shrink: 0; }
+    .prof-name { font-size: 0.82rem; font-weight: 700; color: var(--white); }
+    .prof-plan { font-size: 0.68rem; color: rgba(255,255,255,0.4); }
+    .prof-menu-icon { margin-left: auto; color: rgba(255,255,255,0.3); font-size: 0.8rem; }
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 2rem; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    .topbar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .menu-toggle { display: none; background: none; border: none; cursor: pointer; font-size: 1.3rem; color: var(--text-muted); }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 900; color: var(--navy); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .topbar-period { display: flex; align-items: center; gap: 0.5rem; background: var(--gray-light); border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.85rem; font-size: 0.8rem; font-weight: 600; color: var(--navy); }
+    .content { padding: 2rem; flex: 1; }
+    .welcome-bar { background: linear-gradient(135deg, var(--navy-dark), var(--navy-light)); border-radius: 18px; padding: 1.75rem 2rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; position: relative; overflow: hidden; animation: fadeUp 0.5s ease both; }
+    .welcome-bar::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 80% 50%, rgba(0,191,165,0.15), transparent 55%); }
+    .welcome-bar::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 28px 28px; }
+    .welcome-text { position: relative; z-index: 1; }
+    .welcome-text h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; color: var(--white); margin-bottom: 0.3rem; }
+    .welcome-text p { font-size: 0.85rem; color: rgba(255,255,255,0.6); }
+    .welcome-cta { position: relative; z-index: 1; background: var(--emerald); color: var(--white); border: none; border-radius: 10px; padding: 0.65rem 1.25rem; font-size: 0.85rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,137,123,0.35); }
+    .welcome-cta:hover { background: var(--emerald-light); transform: translateY(-1px); }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.75rem; }
+    .stat-card { background: var(--white); border-radius: 16px; padding: 1.4rem 1.5rem; border: 1px solid var(--border); position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; animation: fadeUp 0.5s ease both; }
+    .stat-card:nth-child(1){animation-delay:.05s} .stat-card:nth-child(2){animation-delay:.1s} .stat-card:nth-child(3){animation-delay:.15s} .stat-card:nth-child(4){animation-delay:.2s}
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(26,35,126,0.08); }
+    .stat-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .stat-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .stat-icon.blue{background:rgba(26,35,126,0.08)} .stat-icon.green{background:rgba(0,137,123,0.08)} .stat-icon.orange{background:rgba(255,111,0,0.08)} .stat-icon.purple{background:rgba(103,58,183,0.08)}
+    .stat-trend { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 50px; }
+    .stat-trend.up{background:rgba(0,137,123,0.1);color:var(--emerald)} .stat-trend.neutral{background:rgba(96,125,139,0.1);color:var(--text-muted)}
+    .stat-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--navy); line-height: 1; margin-bottom: 0.3rem; }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .stat-bar { height: 3px; background: var(--gray); border-radius: 2px; margin-top: 1rem; overflow: hidden; }
+    .stat-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--navy), var(--emerald-light)); }
+    .main-grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.1rem; }
+    .section-head h3 { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 900; color: var(--navy); }
+    .section-head .lien { font-size: 0.8rem; color: var(--emerald); text-decoration: none; font-weight: 600; cursor: pointer; border: none; background: none; font-family: inherit; }
+    .card { background: var(--white); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border); animation: fadeUp 0.5s 0.25s ease both; }
+    .ecole-item { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.75rem; overflow: hidden; transition: box-shadow 0.2s; }
+    .ecole-item:hover { box-shadow: 0 4px 16px rgba(26,35,126,0.07); }
+    .ecole-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; cursor: pointer; background: var(--gray-light); transition: background 0.2s; }
+    .ecole-header:hover { background: var(--gray); }
+    .ecole-badge { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .ecole-badge.prive{background:rgba(26,35,126,0.1)} .ecole-badge.ceg{background:rgba(0,137,123,0.1)}
+    .ecole-info { flex: 1; }
+    .ecole-name { font-size: 0.88rem; font-weight: 700; color: var(--navy); }
+    .ecole-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .ecole-type { font-size: 0.68rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 50px; }
+    .ecole-type.prive{background:rgba(26,35,126,0.1);color:var(--navy)} .ecole-type.ceg{background:rgba(0,137,123,0.1);color:var(--emerald)}
+    .ecole-toggle { color: var(--text-muted); font-size: 0.8rem; transition: transform 0.2s; }
+    .ecole-toggle.open { transform: rotate(180deg); }
+    .classes-list { padding: 0.5rem; display: none; }
+    .classes-list.open { display: block; }
+    .classe-row { display: flex; align-items: center; padding: 0.6rem 0.75rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; text-decoration: none; gap: 0.75rem; }
+    .classe-row:hover { background: rgba(26,35,126,0.04); }
+    .classe-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); flex-shrink: 0; }
+    .classe-name { font-size: 0.83rem; font-weight: 600; color: var(--navy); flex: 1; }
+    .classe-count { font-size: 0.72rem; color: var(--text-muted); }
+    .classe-arrow { font-size: 0.7rem; color: var(--text-muted); }
+    .btn-add-ecole { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; margin-top: 0.75rem; padding: 0.65rem; border: 1.5px dashed var(--border); border-radius: 10px; background: none; cursor: pointer; font-size: 0.83rem; font-weight: 600; color: var(--text-muted); font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+    .btn-add-ecole:hover { border-color: var(--navy); color: var(--navy); background: rgba(26,35,126,0.03); }
+    .right-col { display: flex; flex-direction: column; gap: 1.25rem; }
+    .activity-list { display: flex; flex-direction: column; }
+    .activity-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+    .activity-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .act-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+    .act-icon.note{background:rgba(0,137,123,0.1)} .act-icon.classe{background:rgba(26,35,126,0.08)} .act-icon.eleve{background:rgba(255,152,0,0.1)}
+    .act-info { flex: 1; }
+    .act-text { font-size: 0.82rem; color: var(--text); line-height: 1.45; }
+    .act-text strong { color: var(--navy); }
+    .act-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .period-card { background: linear-gradient(135deg, var(--emerald), var(--emerald-light)); border-radius: 16px; padding: 1.5rem; color: var(--white); animation: fadeUp 0.5s 0.3s ease both; }
+    .period-card h3 { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 900; margin-bottom: 0.25rem; }
+    .period-card p { font-size: 0.78rem; opacity: 0.8; margin-bottom: 1.25rem; }
+    .period-progress { background: rgba(255,255,255,0.2); border-radius: 6px; height: 8px; margin-bottom: 0.5rem; overflow: hidden; }
+    .period-fill { height: 100%; background: var(--white); border-radius: 6px; width: 65%; }
+    .period-labels { display: flex; justify-content: space-between; font-size: 0.7rem; opacity: 0.8; }
+    .period-badges { display: flex; gap: 0.5rem; margin-top: 1.1rem; flex-wrap: wrap; }
+    .period-badge { background: rgba(255,255,255,0.2); border-radius: 50px; padding: 0.25rem 0.7rem; font-size: 0.72rem; font-weight: 600; }
+    .period-badge.active { background: var(--white); color: var(--emerald); }
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+    .qa-btn { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 1rem 0.5rem; border: 1.5px solid var(--border); border-radius: 12px; background: var(--white); cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; text-decoration: none; }
+    .qa-btn:hover { border-color: var(--navy); background: rgba(26,35,126,0.03); transform: translateY(-2px); }
+    .qa-btn .qa-icon { font-size: 1.3rem; }
+    .qa-btn .qa-label { font-size: 0.75rem; font-weight: 600; color: var(--navy); text-align: center; }
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 18px; padding: 2rem; width: 100%; max-width: 440px; margin: 1rem; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    .modal h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 900; color: var(--navy); margin-bottom: 1.25rem; }
+    .modal-field { margin-bottom: 1rem; }
+    .modal-field label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+    .modal-field input, .modal-field select { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .modal-field input:focus, .modal-field select:focus { border-color: var(--navy); }
+    .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; }
+    .btn-cancel { flex: 1; padding: 11px; border: 2px solid var(--border); border-radius: 10px; background: none; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+    .btn-save { flex: 2; padding: 11px; border: none; border-radius: 10px; background: var(--navy); color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-save:hover { background: var(--navy-light); }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .modal-err { font-size: 13px; color: #e53935; background: #fdecea; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; display: none; }
+    .modal-err.show { display: block; }
+    .loading-state { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+    .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)} }
+    .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .main-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main { margin-left: 0; } .menu-toggle { display: block; } .content { padding: 1.25rem; } .topbar { padding: 0 1.25rem; } .welcome-cta { display: none; } .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; } }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 45; }
+    .overlay.show { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <a href="noteclass-landing.html">Note<span>Class</span></a>
+    <p>Espace professeur</p>
+  </div>
+  <nav class="sidebar-nav">
+    <span class="nav-section-label">Principal</span>
+    <a class="nav-item active" href="noteclass-dashboard.html"><span class="nav-icon">🏠</span> Tableau de bord</a>
+    <a class="nav-item" href="noteclass-classe.html"><span class="nav-icon">📝</span> Saisie des notes</a>
+    <span class="nav-section-label">Compte</span>
+    <a class="nav-item" href="#" onclick="ouvrirModalPro()"><span class="nav-icon">💎</span> Passer au Pro</a>
+    <button class="nav-item" onclick="deconnexion()"><span class="nav-icon">🚪</span> Déconnexion</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="prof-card">
+      <div class="prof-avatar" id="prof-avatar">?</div>
+      <div>
+        <div class="prof-name" id="prof-name">Chargement...</div>
+        <div class="prof-plan" id="prof-plan">—</div>
+      </div>
+      <div class="prof-menu-icon">⋮</div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <span class="page-title">Tableau de bord</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-period">📅 <select id="annee-select" onchange="changerAnnee(this.value)" style="border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:600;color:var(--navy);outline:none;cursor:pointer;"><option value="2023-2024">2023–2024</option><option value="2024-2025" selected>2024–2025</option><option value="2025-2026">2025–2026</option><option value="2026-2027">2026–2027</option></select></div>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="welcome-bar">
+      <div class="welcome-text">
+        <h2 id="welcome-msg">Bonjour 👋</h2>
+        <p id="welcome-sub">Chargement de vos données...</p>
+      </div>
+      <button class="welcome-cta" onclick="ouvrirModalEcole()">+ Ajouter une école</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-top"><div class="stat-icon blue">🏫</div><span class="stat-trend neutral" id="stat-plan">—</span></div>
+        <div class="stat-value" id="stat-ecoles">—</div>
+        <div class="stat-label">École(s) enregistrée(s)</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="bar-ecoles" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><div class="stat-icon green">👥</div><span class="stat-trend up">Classes</span></div>
+        <div class="stat-value" id="stat-classes">—</div>
+        <div class="stat-label">Classes actives</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="bar-classes" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><div class="stat-icon orange">🎓</div><span class="stat-trend up">Total</span></div>
+        <div class="stat-value" id="stat-eleves">—</div>
+        <div class="stat-label">Élèves au total</div>
+        <div class="stat-bar"><div class="stat-bar-fill" id="bar-eleves" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><div class="stat-icon purple">✅</div><span class="stat-trend up">Actif</span></div>
+        <div class="stat-value" style="color:var(--emerald);font-size:1.3rem">En ligne</div>
+        <div class="stat-label">Statut du compte</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        <div class="card">
+          <div class="section-head">
+            <h3>Mes écoles &amp; classes</h3>
+            <button class="lien" onclick="ouvrirModalEcole()">+ Nouvelle école</button>
+          </div>
+          <div id="ecoles-container"><div class="loading-state">⏳ Chargement...</div></div>
+          <button class="btn-add-ecole" onclick="ouvrirModalEcole()">+ Ajouter une école</button>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="period-card">
+          <h3>Année scolaire 2024–2025</h3>
+          <p>Trimestre en cours</p>
+          <div class="period-progress"><div class="period-fill"></div></div>
+          <div class="period-labels"><span>Sept.</span><span>65%</span><span>Déc.</span></div>
+          <div class="period-badges">
+            <span class="period-badge active">Trim. 1</span>
+            <span class="period-badge">Trim. 2</span>
+            <span class="period-badge">Trim. 3</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><h3>Actions rapides</h3></div>
+          <div class="quick-actions">
+            <a class="qa-btn" href="noteclass-classe.html"><span class="qa-icon">📝</span><span class="qa-label">Saisir des notes</span></a>
+            <a class="qa-btn" href="#" onclick="ouvrirModalEcole()"><span class="qa-icon">🏫</span><span class="qa-label">Nouvelle école</span></a>
+            <a class="qa-btn" href="noteclass-classe.html"><span class="qa-icon">📊</span><span class="qa-label">Voir moyennes</span></a>
+            <a class="qa-btn" href="#" onclick="ouvrirModalPro()"><span class="qa-icon">💎</span><span class="qa-label">Plan Pro</span></a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><h3>Informations</h3></div>
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="act-icon note">ℹ️</div>
+              <div class="act-info">
+                <div class="act-text">Plan <strong>Découverte</strong> : 1 école max, 10 élèves/classe</div>
+                <div class="act-time">Passez au Pro pour plus</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="act-icon classe">📝</div>
+              <div class="act-info">
+                <div class="act-text">Saisissez les notes depuis la page <strong>classe</strong></div>
+                <div class="act-time">Interros + devoirs → moyenne automatique</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="act-icon eleve">🖨️</div>
+              <div class="act-info">
+                <div class="act-text">Les <strong>relevés de notes</strong> sont disponibles en Plan Pro</div>
+                <div class="act-time">Impression PDF incluse</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ÉCOLE -->
+<div class="modal-overlay" id="modal-ecole">
+  <div class="modal">
+    <h3>➕ Nouvelle école</h3>
+    <div class="modal-err" id="ecole-err"></div>
+    <div class="modal-field"><label>Nom de l'école *</label><input type="text" id="ecole-nom" placeholder="Ex: Collège La Réussite"></div>
+    <div class="modal-field"><label>Ville</label><input type="text" id="ecole-ville" placeholder="Ex: Cotonou"></div>
+    <div class="modal-field"><label>Type *</label><select id="ecole-type"><option value="prive">Privé</option><option value="ceg">CEG (Public)</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fermerModal('modal-ecole')">Annuler</button>
+      <button class="btn-save" id="btn-save-ecole" onclick="sauvegarderEcole()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRO -->
+<div class="modal-overlay" id="modal-pro">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:1rem">💎</div>
+    <h3 style="margin-bottom:.5rem">Passer au Plan Pro</h3>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1.5rem">Débloquez toutes les fonctionnalités : écoles illimitées, élèves illimités, relevés PDF, et plus encore.</p>
+    <div style="background:var(--gray-light);border-radius:12px;padding:1rem;margin-bottom:1.25rem;text-align:left">
+      <div style="font-size:.82rem;margin-bottom:.5rem">✅ Écoles illimitées</div>
+      <div style="font-size:.82rem;margin-bottom:.5rem">✅ Élèves illimités par classe</div>
+      <div style="font-size:.82rem;margin-bottom:.5rem">✅ Relevés de notes PDF</div>
+      <div style="font-size:.82rem">✅ Support prioritaire</div>
+    </div>
+    <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:1.25rem">Pour activer le Plan Pro, contactez-nous par WhatsApp :</p>
+    <a href="https://wa.me/22969911648?text=Je%20veux%20passer%20au%20Plan%20Pro%20NoteClass" target="_blank"
+      style="display:block;background:#25D366;color:white;border-radius:10px;padding:.85rem;font-weight:700;font-size:.9rem;text-decoration:none;margin-bottom:.75rem">
+      📱 Contacter sur WhatsApp
+    </a>
+    <button class="btn-cancel" onclick="fermerModal('modal-pro')" style="width:100%">Fermer</button>
+  </div>
+</div>
+
+
+  <div class="modal">
+    <h3>➕ Nouvelle classe</h3>
+    <div class="modal-err" id="classe-err"></div>
+    <input type="hidden" id="classe-ecole-id">
+    <div class="modal-field"><label>Nom de la classe *</label><input type="text" id="classe-nom" placeholder="Ex: 6ème A"></div>
+    <div class="modal-field"><label>Matière *</label><input type="text" id="classe-matiere" placeholder="Ex: Mathématiques"></div>
+    <div class="modal-field"><label>Coefficient</label><select id="classe-coeff"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+    <div class="modal-field"><label>Type de période</label><select id="classe-periode"><option value="trimestre">Trimestre</option><option value="semestre">Semestre</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fermerModal('modal-classe')">Annuler</button>
+      <button class="btn-save" id="btn-save-classe" onclick="sauvegarderClasse()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'https://noteclass-backend.onrender.com/api';
+  const token = localStorage.getItem('nc_token');
+  if (!token) window.location.href = 'noteclass-auth.html';
+  const user = JSON.parse(localStorage.getItem('nc_user') || '{}');
+
+  function initUser() {
+    const nom = user.nom || '', prenom = user.prenom || '';
+    const initiales = (prenom[0]||'') + (nom[0]||'');
+    document.getElementById('prof-avatar').textContent = initiales.toUpperCase() || '?';
+    document.getElementById('prof-name').textContent = `${prenom} ${nom}`.trim() || 'Professeur';
+    document.getElementById('prof-plan').textContent = user.plan === 'pro' ? 'Plan Pro ⭐' : 'Plan Découverte · Gratuit';
+    document.getElementById('welcome-msg').textContent = `Bonjour, Prof. ${nom} 👋`;
+    document.getElementById('stat-plan').textContent = user.plan === 'pro' ? 'Pro ⭐' : 'Gratuit';
+  }
+
+  async function apiGet(url) {
+    const res = await fetch(`${API}${url}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.status === 401) { deconnexion(); return null; }
+    return res.json();
+  }
+
+  async function apiPost(url, data) {
+    const res = await fetch(`${API}${url}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return { ok: res.ok, data: await res.json() };
+  }
+
+  async function chargerDonnees() {
+    const [ecoles, classes] = await Promise.all([apiGet('/ecoles'), apiGet('/classes')]);
+    if (!ecoles || !classes) return;
+
+    document.getElementById('stat-ecoles').textContent = ecoles.length;
+    document.getElementById('stat-classes').textContent = classes.length;
+    document.getElementById('bar-ecoles').style.width = ecoles.length > 0 ? '100%' : '5%';
+    document.getElementById('bar-classes').style.width = Math.min(classes.length * 15, 100) + '%';
+
+    // Charger élèves pour chaque classe
+    let totalEleves = 0;
+    for (const c of classes) {
+      const eleves = await apiGet(`/eleves?classe_id=${c.id}`);
+      if (eleves) totalEleves += eleves.length;
+    }
+    document.getElementById('stat-eleves').textContent = totalEleves;
+    document.getElementById('bar-eleves').style.width = Math.min(totalEleves * 2, 100) + '%';
+
+    document.getElementById('welcome-sub').textContent =
+      ecoles.length === 0
+        ? 'Bienvenue ! Commencez par ajouter une école.'
+        : `${ecoles.length} école(s) · ${classes.length} classe(s) · ${totalEleves} élève(s)`;
+
+    afficherEcoles(ecoles, classes);
+  }
+
+  function afficherEcoles(ecoles, classes) {
+    const container = document.getElementById('ecoles-container');
+    if (ecoles.length === 0) {
+      container.innerHTML = `<div class="empty-state">🏫 Aucune école pour l'instant.<br><small style="margin-top:8px;display:block">Cliquez sur "Nouvelle école" pour commencer.</small></div>`;
+      return;
+    }
+    container.innerHTML = ecoles.map(ecole => {
+      const cs = classes.filter(c => c.ecole_id === ecole.id);
+      const tc = ecole.type === 'prive' ? 'prive' : 'ceg';
+      const tl = ecole.type === 'prive' ? 'Privé' : 'CEG';
+      const em = ecole.type === 'prive' ? '🏫' : '📚';
+      const classesHTML = cs.length === 0
+        ? `<div class="empty-state" style="padding:.75rem 1rem;font-size:.78rem;text-align:left">Aucune classe · <a href="#" onclick="ouvrirModalClasse(${ecole.id})" style="color:var(--emerald)">Ajouter</a></div>`
+        : cs.map(c => `<a class="classe-row" href="noteclass-classe.html?classe_id=${c.id}"><span class="classe-dot"></span><span class="classe-name">${c.nom}</span><span class="classe-count">${c.matiere} · Coeff. ${c.coefficient}</span><span class="classe-arrow">›</span></a>`).join('')
+          + `<div style="padding:.25rem .75rem .5rem"><button onclick="ouvrirModalClasse(${ecole.id})" style="font-size:.75rem;color:var(--emerald);border:none;background:none;cursor:pointer;font-family:inherit;font-weight:600">+ Ajouter une classe</button></div>`;
+      return `<div class="ecole-item"><div class="ecole-header" onclick="toggleEcole(this)"><div class="ecole-badge ${tc}">${em}</div><div class="ecole-info"><div class="ecole-name">${ecole.nom}</div><div class="ecole-meta">${ecole.ville||'—'} · ${cs.length} classe(s)</div></div><span class="ecole-type ${tc}">${tl}</span><span class="ecole-toggle">▾</span></div><div class="classes-list open">${classesHTML}</div></div>`;
+    }).join('');
+  }
+
+  function ouvrirModalEcole() {
+    ['ecole-nom','ecole-ville'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('ecole-type').value='prive';
+    document.getElementById('ecole-err').className='modal-err';
+    document.getElementById('modal-ecole').classList.add('show');
+  }
+
+  async function sauvegarderEcole() {
+    const nom = document.getElementById('ecole-nom').value.trim();
+    const ville = document.getElementById('ecole-ville').value.trim();
+    const type = document.getElementById('ecole-type').value;
+    const err = document.getElementById('ecole-err');
+    const btn = document.getElementById('btn-save-ecole');
+    if (!nom) { err.textContent='Le nom est obligatoire.'; err.className='modal-err show'; return; }
+    btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enregistrement...';
+    const r = await apiPost('/ecoles', {nom,ville,type});
+    btn.disabled=false; btn.innerHTML='Enregistrer';
+    if (!r.ok) { err.textContent=r.data.error||'Erreur.'; err.className='modal-err show'; }
+    else { fermerModal('modal-ecole'); chargerDonnees(); }
+  }
+
+  function ouvrirModalClasse(ecoleId) {
+    document.getElementById('classe-ecole-id').value=ecoleId;
+    ['classe-nom','classe-matiere'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('classe-err').className='modal-err';
+    document.getElementById('modal-classe').classList.add('show');
+  }
+
+  async function sauvegarderClasse() {
+    const ecole_id=document.getElementById('classe-ecole-id').value;
+    const nom=document.getElementById('classe-nom').value.trim();
+    const matiere=document.getElementById('classe-matiere').value.trim();
+    const coefficient=document.getElementById('classe-coeff').value;
+    const type_periode=document.getElementById('classe-periode').value;
+    const err=document.getElementById('classe-err');
+    const btn=document.getElementById('btn-save-classe');
+    if (!nom||!matiere){err.textContent='Nom et matière obligatoires.';err.className='modal-err show';return;}
+    btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enregistrement...';
+    const r=await apiPost('/classes',{ecole_id,nom,matiere,coefficient,type_periode,annee_scolaire:anneeActuelle});
+    btn.disabled=false; btn.innerHTML='Enregistrer';
+    if(!r.ok){err.textContent=r.data.error||'Erreur.';err.className='modal-err show';}
+    else{fermerModal('modal-classe');chargerDonnees();}
+  }
+
+  let anneeActuelle = '2024-2025';
+
+  function changerAnnee(val) {
+    anneeActuelle = val;
+    chargerDonnees();
+  }
+
+  function ouvrirModalPro() {
+    document.getElementById('modal-pro').classList.add('show');
+  }
+
+  function fermerModal(id){document.getElementById(id).classList.remove('show');}
+  function toggleEcole(header){const list=header.nextElementSibling;const toggle=header.querySelector('.ecole-toggle');list.classList.toggle('open');toggle.classList.toggle('open');}
+  function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
+  function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+  function deconnexion(){localStorage.removeItem('nc_token');localStorage.removeItem('nc_user');window.location.href='noteclass-auth.html';}
+
+  document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});});
+
+  initUser();
+  chargerDonnees();
+</script>
+</body>
+</html>

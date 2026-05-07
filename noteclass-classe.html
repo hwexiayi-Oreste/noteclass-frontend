@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NoteClass — Classe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #1A237E; --navy-dark: #0D1754; --navy-light: #283593;
+      --emerald: #00897B; --emerald-light: #00BFA5;
+      --white: #FFFFFF; --gray-light: #F5F5F5; --gray: #ECEFF1;
+      --text: #1C1C2E; --text-muted: #607D8B; --border: #E8EDF2;
+      --sidebar-w: 240px;
+      --tb: #4CAF50; --b: #8BC34A; --p: #FFC107; --ins: #FF9800; --ti: #F44336;
+    }
+    html, body { height: 100%; }
+    body { font-family: 'DM Sans', sans-serif; background: #EEF2F7; color: var(--text); display: flex; min-height: 100vh; }
+    .sidebar { width: var(--sidebar-w); background: var(--navy-dark); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transition: transform 0.3s; }
+    .sidebar-logo { padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .sidebar-logo a { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 900; color: var(--white); text-decoration: none; }
+    .sidebar-logo a span { color: var(--emerald-light); }
+    .sidebar-logo p { font-size: 0.7rem; color: rgba(255,255,255,0.35); margin-top: 0.2rem; }
+    .sidebar-nav { flex: 1; padding: 1.25rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; overflow-y: auto; }
+    .nav-section-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25); padding: 0.75rem 0.5rem 0.4rem; }
+    .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.9rem; border-radius: 10px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; border: none; background: none; width: 100%; text-align: left; cursor: pointer; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: var(--white); }
+    .nav-item.active { background: rgba(0,191,165,0.15); color: var(--emerald-light); }
+    .nav-icon { font-size: 1.05rem; width: 20px; flex-shrink: 0; }
+    .sidebar-footer { padding: 1rem 0.75rem; border-top: 1px solid rgba(255,255,255,0.07); }
+    .prof-card { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 12px; }
+    .prof-avatar { width: 36px; height: 36px; background: linear-gradient(135deg, var(--emerald), var(--emerald-light)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: var(--white); flex-shrink: 0; }
+    .prof-name { font-size: 0.82rem; font-weight: 700; color: var(--white); }
+    .prof-plan { font-size: 0.68rem; color: rgba(255,255,255,0.4); }
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 2rem; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+    .topbar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .menu-toggle { display: none; background: none; border: none; cursor: pointer; font-size: 1.3rem; color: var(--text-muted); }
+    .breadcrumb { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--navy); }
+    .breadcrumb span { color: var(--text-muted); }
+    .breadcrumb strong { color: var(--navy); font-weight: 700; }
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+    .btn-sm { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-outline { background: var(--white); color: var(--navy); border: 1.5px solid var(--border); }
+    .btn-outline:hover { border-color: var(--navy); }
+    .btn-primary-sm { background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: var(--white); box-shadow: 0 3px 10px rgba(26,35,126,0.25); }
+    .btn-emerald { background: var(--emerald); color: var(--white); }
+    .btn-emerald:hover { background: var(--emerald-light); transform: translateY(-1px); }
+    .btn-emerald:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .content { padding: 2rem; flex: 1; }
+    .classe-header { background: linear-gradient(135deg, var(--navy-dark), var(--navy-light)); border-radius: 18px; padding: 1.75rem 2rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; position: relative; overflow: hidden; animation: fadeUp 0.4s ease both; }
+    .classe-header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 85% 50%, rgba(0,191,165,0.15), transparent 55%); }
+    .classe-header::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 28px 28px; }
+    .classe-info { position: relative; z-index: 1; flex: 1; }
+    .classe-info h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 900; color: var(--white); margin-bottom: 0.6rem; }
+    .classe-meta { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+    .meta-pill { display: inline-flex; align-items: center; gap: 0.35rem; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.85); font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.7rem; border-radius: 50px; }
+    .coeff-pill { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(0,191,165,0.2); border: 1px solid rgba(0,191,165,0.4); color: var(--emerald-light); font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.4rem 0.2rem 0.7rem; border-radius: 50px; position: relative; z-index: 1; }
+    .coeff-pill label { color: rgba(255,255,255,0.7); font-weight: 600; white-space: nowrap; }
+    .coeff-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: var(--white); font-size: 0.78rem; font-weight: 700; font-family: 'DM Sans', sans-serif; padding: 0.15rem 0.4rem; border-radius: 6px; cursor: pointer; outline: none; }
+    .coeff-select option { background: var(--navy-dark); color: var(--white); }
+    .classe-stats { position: relative; z-index: 1; display: flex; gap: 1.5rem; flex-shrink: 0; }
+    .ch-stat { text-align: center; }
+    .ch-stat .val { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: var(--white); }
+    .ch-stat .lbl { font-size: 0.68rem; color: rgba(255,255,255,0.5); }
+    .formule-bar { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; animation: fadeUp 0.4s 0.08s ease both; }
+    .formule-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .formule-text { font-size: 0.82rem; color: var(--navy); font-weight: 600; }
+    .formule-text span { color: var(--emerald); }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; animation: fadeUp 0.4s 0.1s ease both; }
+    .toolbar-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .search-box { display: flex; align-items: center; gap: 0.5rem; background: var(--white); border: 1.5px solid var(--border); border-radius: 9px; padding: 0.45rem 0.85rem; }
+    .search-box input { border: none; outline: none; font-size: 0.85rem; font-family: 'DM Sans', sans-serif; color: var(--text); width: 170px; background: transparent; }
+    .interro-tabs { display: flex; gap: 0.4rem; }
+    .itab { padding: 0.4rem 0.85rem; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: 1.5px solid var(--border); background: var(--white); color: var(--text-muted); transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+    .itab.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+    /* Sélecteur période */
+    .periode-select { padding: 0.4rem 0.75rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--navy); background: var(--white); outline: none; cursor: pointer; }
+    .table-wrap { background: var(--white); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; animation: fadeUp 0.4s 0.15s ease both; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    thead { background: var(--gray-light); }
+    thead th { padding: 0.85rem 0.75rem; text-align: left; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; border-bottom: 1px solid var(--border); }
+    thead th:first-child { padding-left: 1.25rem; }
+    thead th.center { text-align: center; }
+    .col-sep { border-left: 2px solid var(--border) !important; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(26,35,126,0.025); }
+    tbody td { padding: 0.7rem 0.75rem; font-size: 0.85rem; vertical-align: middle; }
+    tbody td:first-child { padding-left: 1.25rem; }
+    .num-col { font-size: 0.72rem; color: var(--text-muted); font-weight: 700; }
+    .eleve-name { font-weight: 700; color: var(--navy); }
+    .note-input { width: 54px; text-align: center; padding: 0.42rem 0.3rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.88rem; font-weight: 600; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--gray-light); outline: none; transition: border-color 0.2s, background 0.2s; }
+    .note-input:focus { border-color: var(--navy); background: var(--white); box-shadow: 0 0 0 3px rgba(26,35,126,0.07); }
+    .note-input.invalid { border-color: #F44336; background: rgba(244,67,54,0.05); }
+    .note-input.devoir { background: rgba(0,137,123,0.06); border-color: rgba(0,137,123,0.25); }
+    .note-input.devoir:focus { border-color: var(--emerald); }
+    td.center { text-align: center; }
+    .moy-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 50px; padding: 0.3rem 0.55rem; border-radius: 8px; font-size: 0.85rem; font-weight: 900; font-family: 'Playfair Display', serif; }
+    .moy-badge.tb{background:rgba(76,175,80,0.12);color:var(--tb)} .moy-badge.b{background:rgba(139,195,74,0.12);color:var(--b)} .moy-badge.ab{background:rgba(205,220,57,0.12);color:#9E9D24} .moy-badge.p{background:rgba(255,193,7,0.12);color:#F57F17} .moy-badge.ins{background:rgba(255,152,0,0.12);color:var(--ins)} .moy-badge.ti{background:rgba(244,67,54,0.12);color:var(--ti)} .moy-badge.empty{background:var(--gray-light);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500}
+    .appr-badge { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 50px; white-space: nowrap; }
+    .appr-badge.tb{background:rgba(76,175,80,0.1);color:var(--tb)} .appr-badge.b{background:rgba(139,195,74,0.1);color:var(--b)} .appr-badge.ab{background:rgba(205,220,57,0.1);color:#9E9D24} .appr-badge.p{background:rgba(255,193,7,0.1);color:#F57F17} .appr-badge.ins{background:rgba(255,152,0,0.1);color:var(--ins)} .appr-badge.ti{background:rgba(244,67,54,0.1);color:var(--ti)} .appr-badge.empty{background:var(--gray-light);color:var(--text-muted)}
+    .comment-input { width: 100%; min-width: 130px; padding: 0.4rem 0.65rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.78rem; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--gray-light); outline: none; transition: border-color 0.2s; }
+    .comment-input:focus { border-color: var(--emerald); background: var(--white); }
+    .row-btn { width: 28px; height: 28px; border-radius: 7px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; transition: all 0.15s; background: var(--gray-light); color: var(--text-muted); }
+    .row-btn:hover { background: rgba(244,67,54,0.1); color: #F44336; }
+    .table-footer { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-top: 1px solid var(--border); background: var(--gray-light); flex-wrap: wrap; gap: 0.75rem; }
+    .tf-left { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+    .tf-stat { display: flex; flex-direction: column; }
+    .tf-val { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 900; color: var(--navy); }
+    .tf-lbl { font-size: 0.68rem; color: var(--text-muted); }
+    .add-eleve-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.1rem; background: var(--navy); color: var(--white); border: none; border-radius: 9px; font-size: 0.82rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+    .add-eleve-btn:hover { background: var(--navy-light); }
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy-dark); color: white; padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; z-index: 999; opacity: 0; transform: translateY(12px); transition: all 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--emerald); }
+    .toast.error { background: #e53935; }
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--white); border-radius: 20px; padding: 2rem; width: 100%; max-width: 440px; margin: 1rem; animation: modalIn 0.3s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    @keyframes modalIn { from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)} }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 900; color: var(--navy); }
+    .modal-close { background: var(--gray-light); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
+    .modal .form-group { margin-bottom: 1rem; }
+    .modal label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--navy); margin-bottom: 0.4rem; }
+    .modal input { width: 100%; padding: 0.7rem 1rem; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.88rem; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.2s; }
+    .modal input:focus { border-color: var(--navy); }
+    .modal-footer { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+    .modal-footer button { flex: 1; padding: 0.75rem; border-radius: 10px; font-size: 0.88rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+    .btn-cancel { background: var(--gray-light); border: 1.5px solid var(--border); color: var(--text-muted); }
+    .btn-confirm { background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: var(--white); border: none; }
+    .btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+    .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 45; }
+    .overlay.show { display: block; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
+    .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spinAnim 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spinAnim { to { transform: rotate(360deg); } }
+    @media (max-width: 768px) { .sidebar{transform:translateX(-100%)} .sidebar.open{transform:translateX(0)} .main{margin-left:0} .menu-toggle{display:block} .content{padding:1.1rem} .topbar{padding:0 1.1rem} .classe-stats{display:none} .toolbar{flex-direction:column;align-items:flex-start} }
+  </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="toast" id="toast"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <a href="noteclass-landing.html">Note<span>Class</span></a>
+    <p>Espace professeur</p>
+  </div>
+  <nav class="sidebar-nav">
+    <span class="nav-section-label">Principal</span>
+    <a class="nav-item" href="noteclass-dashboard.html"><span class="nav-icon">🏠</span> Tableau de bord</a>
+    <a class="nav-item active" href="#"><span class="nav-icon">📝</span> Saisie des notes</a>
+    <span class="nav-section-label">Compte</span>
+    <a class="nav-item" href="#"><span class="nav-icon">💎</span> Passer au Pro</a>
+    <button class="nav-item" onclick="deconnexion()"><span class="nav-icon">🚪</span> Déconnexion</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="prof-card">
+      <div class="prof-avatar" id="prof-avatar">?</div>
+      <div>
+        <div class="prof-name" id="prof-name">—</div>
+        <div class="prof-plan" id="prof-plan">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="breadcrumb">
+        <a href="noteclass-dashboard.html">Tableau de bord</a>
+        <span>›</span>
+        <strong id="breadcrumb-classe">Classe</strong>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-sm btn-primary-sm" onclick="openModal()">+ Ajouter un élève</button>
+    </div>
+  </header>
+
+  <div class="content">
+    <!-- HEADER CLASSE -->
+    <div class="classe-header">
+      <div class="classe-info">
+        <h2 id="classe-titre">Chargement...</h2>
+        <div class="classe-meta" id="classe-meta"></div>
+      </div>
+      <div class="classe-stats">
+        <div class="ch-stat"><div class="val" id="stat-eleves">—</div><div class="lbl">Élèves</div></div>
+        <div class="ch-stat"><div class="val" id="stat-saisis">—</div><div class="lbl">Notes saisies</div></div>
+        <div class="ch-stat"><div class="val" id="stat-moy" style="color:var(--emerald-light)">—</div><div class="lbl">Moy. classe</div></div>
+      </div>
+    </div>
+
+    <!-- FORMULE -->
+    <div class="formule-bar">
+      <span class="formule-label">Formule de calcul</span>
+      <span class="formule-text">
+        Moy. interros = <span>(I1 + I2 + …) ÷ nb interros</span>
+        &nbsp;·&nbsp; Moy. devoirs = <span>(D1 + D2) ÷ 2</span>
+        &nbsp;·&nbsp; <strong>Moyenne = <span>(Moy. interros + Moy. devoirs) ÷ 2</span></strong>
+        &nbsp;·&nbsp; Coefficient : <span id="coeff-display">—</span>
+      </span>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" placeholder="Rechercher un élève..." oninput="filterEleves(this.value)" />
+        </div>
+        <select class="periode-select" id="periode-select" onchange="changerPeriode(this.value)">
+          <option value="1">Période 1</option>
+          <option value="2">Période 2</option>
+          <option value="3">Période 3</option>
+        </select>
+        <div class="interro-tabs">
+          <button class="itab active" onclick="setInterros(1, this)">1 Interro</button>
+          <button class="itab" onclick="setInterros(2, this)">2 Interros</button>
+          <button class="itab" onclick="setInterros(3, this)">3 Interros</button>
+        </div>
+      </div>
+      <button class="btn-sm btn-emerald" id="btn-save" onclick="saveNotes()">💾 Enregistrer</button>
+    </div>
+
+    <!-- TABLEAU -->
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nom &amp; Prénom</th>
+              <th class="center col-sep" id="th-i1">Interro 1 <span style="font-weight:400;opacity:.6">/20</span></th>
+              <th class="center" id="th-i2">Interro 2 <span style="font-weight:400;opacity:.6">/20</span></th>
+              <th class="center" id="th-i3">Interro 3 <span style="font-weight:400;opacity:.6">/20</span></th>
+              <th class="center col-sep">Devoir 1 <span style="font-weight:400;opacity:.6">/20</span></th>
+              <th class="center">Devoir 2 <span style="font-weight:400;opacity:.6">/20</span></th>
+              <th class="center col-sep">Moyenne</th>
+              <th class="center">Appréciation</th>
+              <th>Commentaire</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="eleves-body"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <div class="tf-left">
+          <div class="tf-stat"><span class="tf-val" id="footer-nb">—</span><span class="tf-lbl">élèves</span></div>
+          <div class="tf-stat"><span class="tf-val" id="footer-moy" style="color:var(--text-muted)">—</span><span class="tf-lbl">moyenne de classe</span></div>
+          <div class="tf-stat"><span class="tf-val" id="footer-appr" style="color:var(--text-muted)">—</span><span class="tf-lbl">appréciation classe</span></div>
+        </div>
+        <button class="add-eleve-btn" onclick="openModal()">+ Ajouter un élève</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJOUT ÉLÈVE -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Ajouter un élève</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Nom</label>
+      <input type="text" id="new-nom" placeholder="Ex: DOSSOU" />
+    </div>
+    <div class="form-group">
+      <label>Prénom</label>
+      <input type="text" id="new-prenom" placeholder="Ex: Félicité" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-confirm" id="btn-confirm-eleve" onclick="ajouterEleve()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'https://noteclass-backend.onrender.com/api';
+  const token = localStorage.getItem('nc_token');
+  if (!token) window.location.href = 'noteclass-auth.html';
+
+  const user = JSON.parse(localStorage.getItem('nc_user') || '{}');
+  const params = new URLSearchParams(window.location.search);
+  const classeId = params.get('classe_id');
+
+  let eleves = [];
+  let notesData = {};   // { eleve_id: { interro1: val, ... } }
+  let apprData = {};    // { eleve_id: commentaire }
+  let classeInfo = null;
+  let nbInterros = 1;
+  let periodeActuelle = 1;
+
+  // Init user sidebar
+  (function() {
+    const nom = user.nom||'', prenom = user.prenom||'';
+    const init = (prenom[0]||'') + (nom[0]||'');
+    document.getElementById('prof-avatar').textContent = init.toUpperCase() || '?';
+    document.getElementById('prof-name').textContent = `${prenom} ${nom}`.trim() || 'Professeur';
+    document.getElementById('prof-plan').textContent = user.plan === 'pro' ? 'Plan Pro ⭐' : 'Plan Découverte';
+  })();
+
+  async function apiGet(url) {
+    const res = await fetch(`${API}${url}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.status === 401) { deconnexion(); return null; }
+    return res.json();
+  }
+  async function apiPost(url, data) {
+    const res = await fetch(`${API}${url}`, { method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    return { ok: res.ok, data: await res.json() };
+  }
+  async function apiDelete(url) {
+    const res = await fetch(`${API}${url}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+    return { ok: res.ok, data: await res.json() };
+  }
+
+  function toast(msg, type='success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast show ${type}`;
+    setTimeout(() => el.className = 'toast', 3000);
+  }
+
+  // Charger classe + élèves + notes
+  async function charger() {
+    if (!classeId) {
+      document.getElementById('classe-titre').textContent = 'Aucune classe sélectionnée';
+      document.getElementById('eleves-body').innerHTML = `<tr><td colspan="11" style="text-align:center;padding:3rem;color:var(--text-muted)">Retournez au <a href="noteclass-dashboard.html" style="color:var(--navy)">tableau de bord</a> et cliquez sur une classe.</td></tr>`;
+      return;
+    }
+
+    // Charger classes pour obtenir infos
+    const classes = await apiGet('/classes');
+    if (!classes) return;
+    classeInfo = classes.find(c => c.id == classeId);
+    if (!classeInfo) { toast('Classe introuvable', 'error'); return; }
+
+    // Afficher infos classe
+    document.title = `NoteClass — ${classeInfo.nom} · ${classeInfo.matiere}`;
+    document.getElementById('classe-titre').textContent = `${classeInfo.nom} — ${classeInfo.matiere}`;
+    document.getElementById('breadcrumb-classe').textContent = `${classeInfo.nom} — ${classeInfo.matiere}`;
+    document.getElementById('coeff-display').textContent = classeInfo.coefficient;
+    document.getElementById('classe-meta').innerHTML = `
+      <span class="meta-pill">📅 ${classeInfo.type_periode === 'trimestre' ? 'Trimestre' : 'Semestre'} · ${classeInfo.annee_scolaire}</span>
+      <span class="meta-pill">⚖️ Coefficient ${classeInfo.coefficient}</span>
+      <div class="coeff-pill"><label>Interros :</label></div>
+    `;
+
+    await chargerEleves();
+  }
+
+  async function chargerEleves() {
+    const data = await apiGet(`/eleves?classe_id=${classeId}`);
+    if (!data) return;
+    eleves = data.map(e => ({ ...e, i1:'', i2:'', i3:'', d1:'', d2:'', commentaire:'' }));
+
+    // Charger notes
+    await chargerNotes();
+  }
+
+  async function chargerNotes() {
+    const data = await apiGet(`/notes?classe_id=${classeId}&periode=${periodeActuelle}&nb_interros=${nbInterros}`);
+    if (!data) return;
+
+    // Fusionner notes dans eleves
+    eleves = eleves.map(e => {
+      const eleveData = data.eleves ? data.eleves.find(d => d.eleve.id === e.id) : null;
+      if (eleveData) {
+        const n = eleveData.notes || {};
+        return { ...e,
+          i1: n.interro1 != null ? n.interro1 : '',
+          i2: n.interro2 != null ? n.interro2 : '',
+          i3: n.interro3 != null ? n.interro3 : '',
+          d1: n.devoir1  != null ? n.devoir1  : '',
+          d2: n.devoir2  != null ? n.devoir2  : '',
+          commentaire: eleveData.commentaire || ''
+        };
+      }
+      return e;
+    });
+
+    render(eleves);
+  }
+
+  function getAppreciation(moy) {
+    if (moy === null) return { label:'—', abbr:'—', cls:'empty' };
+    if (moy >= 16) return { label:'Très Bien',       abbr:'TB', cls:'tb'  };
+    if (moy >= 14) return { label:'Bien',             abbr:'B',  cls:'b'   };
+    if (moy >= 12) return { label:'Assez Bien',       abbr:'AB', cls:'ab'  };
+    if (moy >= 10) return { label:'Passable',         abbr:'P',  cls:'p'   };
+    if (moy >= 8)  return { label:'Insuffisant',      abbr:'I',  cls:'ins' };
+    return               { label:'Très Insuffisant', abbr:'TI', cls:'ti'  };
+  }
+
+  function calculerMoyenne(e) {
+    const interros = [];
+    if (nbInterros >= 1 && e.i1 !== '' && e.i1 != null) interros.push(parseFloat(e.i1));
+    if (nbInterros >= 2 && e.i2 !== '' && e.i2 != null) interros.push(parseFloat(e.i2));
+    if (nbInterros >= 3 && e.i3 !== '' && e.i3 != null) interros.push(parseFloat(e.i3));
+    const devoirs = [];
+    if (e.d1 !== '' && e.d1 != null) devoirs.push(parseFloat(e.d1));
+    if (e.d2 !== '' && e.d2 != null) devoirs.push(parseFloat(e.d2));
+    const moyI = interros.length > 0 ? interros.reduce((a,b)=>a+b,0)/interros.length : null;
+    const moyD = devoirs.length  > 0 ? devoirs.reduce((a,b)=>a+b,0) /devoirs.length  : null;
+    if (moyI === null && moyD === null) return null;
+    let total = 0, poids = 0;
+    if (moyI !== null) { total += moyI; poids++; }
+    if (moyD !== null) { total += moyD; poids++; }
+    return Math.round((total/poids)*100)/100;
+  }
+
+  function render(liste) {
+    const tbody = document.getElementById('eleves-body');
+    if (liste.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state">Aucun élève dans cette classe.<br><small>Cliquez sur "Ajouter un élève" pour commencer.</small></div></td></tr>`;
+      updateStats([]);
+      return;
+    }
+    tbody.innerHTML = '';
+    liste.forEach((e, idx) => {
+      const moy = calculerMoyenne(e);
+      const appr = getAppreciation(moy);
+      const moyStr = moy !== null ? moy.toFixed(2) : '—';
+      const tr = document.createElement('tr');
+      tr.dataset.id = e.id;
+      tr.innerHTML = `
+        <td class="num-col">${idx+1}</td>
+        <td><div class="eleve-name">${e.nom} ${e.prenom}</div></td>
+        <td class="center col-sep">
+          <input class="note-input" type="number" min="0" max="20" step="0.25" value="${e.i1}" placeholder="—"
+            oninput="updateNote(${e.id},'i1',this)" onblur="validateNote(this)" />
+        </td>
+        <td class="center" id="col-i2-${e.id}" style="display:${nbInterros>=2?'table-cell':'none'}">
+          <input class="note-input" type="number" min="0" max="20" step="0.25" value="${e.i2}" placeholder="—"
+            oninput="updateNote(${e.id},'i2',this)" onblur="validateNote(this)" />
+        </td>
+        <td class="center" id="col-i3-${e.id}" style="display:${nbInterros>=3?'table-cell':'none'}">
+          <input class="note-input" type="number" min="0" max="20" step="0.25" value="${e.i3}" placeholder="—"
+            oninput="updateNote(${e.id},'i3',this)" onblur="validateNote(this)" />
+        </td>
+        <td class="center col-sep">
+          <input class="note-input devoir" type="number" min="0" max="20" step="0.25" value="${e.d1}" placeholder="—"
+            oninput="updateNote(${e.id},'d1',this)" onblur="validateNote(this)" />
+        </td>
+        <td class="center">
+          <input class="note-input devoir" type="number" min="0" max="20" step="0.25" value="${e.d2}" placeholder="—"
+            oninput="updateNote(${e.id},'d2',this)" onblur="validateNote(this)" />
+        </td>
+        <td class="center col-sep"><span class="moy-badge ${appr.cls}">${moyStr}</span></td>
+        <td class="center"><span class="appr-badge ${appr.cls}">${appr.abbr}</span></td>
+        <td><input class="comment-input" type="text" maxlength="120" value="${e.commentaire||''}" placeholder="Commentaire..."
+          oninput="updateComment(${e.id},this)" /></td>
+        <td><button class="row-btn" onclick="supprimerEleve(${e.id})" title="Supprimer">🗑</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    updateStats(liste);
+  }
+
+  function updateNote(id, champ, input) {
+    const e = eleves.find(x => x.id === id);
+    if (!e) return;
+    e[champ] = input.value.trim();
+    const moy = calculerMoyenne(e);
+    const appr = getAppreciation(moy);
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    if (tr) {
+      tr.querySelector('.moy-badge').className = `moy-badge ${appr.cls}`;
+      tr.querySelector('.moy-badge').textContent = moy !== null ? moy.toFixed(2) : '—';
+      tr.querySelector('.appr-badge').className = `appr-badge ${appr.cls}`;
+      tr.querySelector('.appr-badge').textContent = appr.abbr;
+    }
+    updateStats(eleves);
+  }
+
+  function updateComment(id, input) {
+    const e = eleves.find(x => x.id === id);
+    if (e) e.commentaire = input.value;
+  }
+
+  function validateNote(input) {
+    const val = parseFloat(input.value);
+    if (input.value !== '' && (isNaN(val) || val < 0 || val > 20)) input.classList.add('invalid');
+    else input.classList.remove('invalid');
+  }
+
+  function updateStats(liste) {
+    const moyennes = liste.map(e => calculerMoyenne(e)).filter(m => m !== null);
+    const nb = liste.length;
+    const saisis = liste.filter(e => calculerMoyenne(e) !== null).length;
+    const moyClasse = moyennes.length > 0 ? (moyennes.reduce((a,b)=>a+b,0)/moyennes.length).toFixed(2) : null;
+    const apprC = moyClasse ? getAppreciation(parseFloat(moyClasse)) : { abbr:'—' };
+    document.getElementById('stat-eleves').textContent = nb;
+    document.getElementById('stat-saisis').textContent = `${saisis}/${nb}`;
+    document.getElementById('stat-moy').textContent = moyClasse || '—';
+    document.getElementById('footer-nb').textContent = nb;
+    document.getElementById('footer-moy').textContent = moyClasse ? `${moyClasse}/20` : '—';
+    document.getElementById('footer-appr').textContent = apprC.abbr;
+  }
+
+  function setInterros(n, btn) {
+    nbInterros = n;
+    document.querySelectorAll('.itab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('th-i2').style.display = n >= 2 ? '' : 'none';
+    document.getElementById('th-i3').style.display = n >= 3 ? '' : 'none';
+    eleves.forEach(e => {
+      const c2 = document.getElementById(`col-i2-${e.id}`);
+      const c3 = document.getElementById(`col-i3-${e.id}`);
+      if (c2) c2.style.display = n >= 2 ? 'table-cell' : 'none';
+      if (c3) c3.style.display = n >= 3 ? 'table-cell' : 'none';
+      if (n < 2) e.i2 = '';
+      if (n < 3) e.i3 = '';
+    });
+    eleves.forEach(e => {
+      const moy = calculerMoyenne(e);
+      const appr = getAppreciation(moy);
+      const tr = document.querySelector(`tr[data-id="${e.id}"]`);
+      if (tr) {
+        tr.querySelector('.moy-badge').className = `moy-badge ${appr.cls}`;
+        tr.querySelector('.moy-badge').textContent = moy !== null ? moy.toFixed(2) : '—';
+        tr.querySelector('.appr-badge').className = `appr-badge ${appr.cls}`;
+        tr.querySelector('.appr-badge').textContent = appr.abbr;
+      }
+    });
+    updateStats(eleves);
+  }
+
+  function changerPeriode(val) {
+    periodeActuelle = parseInt(val);
+    // Réinitialiser notes locales
+    eleves = eleves.map(e => ({...e, i1:'', i2:'', i3:'', d1:'', d2:'', commentaire:''}));
+    chargerNotes();
+  }
+
+  function filterEleves(query) {
+    const q = query.toLowerCase().trim();
+    render(q === '' ? eleves : eleves.filter(e => `${e.nom} ${e.prenom}`.toLowerCase().includes(q)));
+  }
+
+  // ENREGISTRER les notes
+  async function saveNotes() {
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Enregistrement...';
+
+    // Construire objet notes
+    const notes = {};
+    const appreciations = {};
+    eleves.forEach(e => {
+      const noteEleve = {};
+      if (e.i1 !== '') noteEleve.interro1 = parseFloat(e.i1);
+      if (e.i2 !== '' && nbInterros >= 2) noteEleve.interro2 = parseFloat(e.i2);
+      if (e.i3 !== '' && nbInterros >= 3) noteEleve.interro3 = parseFloat(e.i3);
+      if (e.d1 !== '') noteEleve.devoir1 = parseFloat(e.d1);
+      if (e.d2 !== '') noteEleve.devoir2 = parseFloat(e.d2);
+      if (Object.keys(noteEleve).length > 0) notes[e.id] = noteEleve;
+      if (e.commentaire) appreciations[e.id] = e.commentaire;
+    });
+
+    const result = await apiPost('/notes/save', { classe_id: classeId, periode: periodeActuelle, notes, appreciations });
+    btn.disabled = false;
+    btn.innerHTML = '💾 Enregistrer';
+
+    if (result.ok) toast('✅ Notes enregistrées avec succès !', 'success');
+    else toast('❌ Erreur : ' + (result.data.error || 'Impossible d\'enregistrer'), 'error');
+  }
+
+  // AJOUTER ÉLÈVE
+  function openModal() { document.getElementById('modal').classList.add('show'); document.getElementById('new-nom').focus(); }
+  function closeModal() { document.getElementById('modal').classList.remove('show'); document.getElementById('new-nom').value=''; document.getElementById('new-prenom').value=''; }
+  function closeModalOutside(e) { if (e.target===document.getElementById('modal')) closeModal(); }
+
+  async function ajouterEleve() {
+    const nom = document.getElementById('new-nom').value.trim().toUpperCase();
+    const prenom = document.getElementById('new-prenom').value.trim();
+    if (!nom || !prenom) { toast('Remplissez le nom et le prénom.', 'error'); return; }
+    const btn = document.getElementById('btn-confirm-eleve');
+    btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+    const result = await apiPost('/eleves', { classe_id: classeId, nom, prenom });
+    btn.disabled = false; btn.textContent = 'Ajouter';
+    if (result.ok) {
+      closeModal();
+      const nouvel = { ...result.data, i1:'', i2:'', i3:'', d1:'', d2:'', commentaire:'' };
+      eleves.push(nouvel);
+      render(eleves);
+      toast(`✅ ${prenom} ${nom} ajouté(e) !`, 'success');
+    } else {
+      toast('❌ ' + (result.data.error || 'Erreur.'), 'error');
+    }
+  }
+
+  // SUPPRIMER ÉLÈVE
+  async function supprimerEleve(id) {
+    if (!confirm('Supprimer cet élève et toutes ses notes ?')) return;
+    const result = await apiDelete(`/eleves/${id}`);
+    if (result.ok) {
+      eleves = eleves.filter(e => e.id !== id);
+      render(eleves);
+      toast('Élève supprimé.', 'success');
+    } else {
+      toast('❌ ' + (result.data.error || 'Erreur.'), 'error');
+    }
+  }
+
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+  function deconnexion() { localStorage.removeItem('nc_token'); localStorage.removeItem('nc_user'); window.location.href = 'noteclass-auth.html'; }
+
+  // Masquer colonnes interros au démarrage
+  document.getElementById('th-i2').style.display = 'none';
+  document.getElementById('th-i3').style.display = 'none';
+
+  charger();
+</script>
+</body>
+</html>

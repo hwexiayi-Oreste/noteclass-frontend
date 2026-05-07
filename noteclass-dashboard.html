@@ -325,6 +325,7 @@
     <h3>➕ Nouvelle classe</h3>
     <div class="modal-err" id="classe-err"></div>
     <input type="hidden" id="classe-ecole-id">
+    <div class="modal-field" style="display:none"><label>École</label><select id="classe-ecole-select"></select></div>
     <div class="modal-field"><label>Nom de la classe *</label><input type="text" id="classe-nom" placeholder="Ex: 6ème A"></div>
     <div class="modal-field"><label>Matière *</label><input type="text" id="classe-matiere" placeholder="Ex: Mathématiques"></div>
     <div class="modal-field"><label>Coefficient</label><select id="classe-coeff"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
@@ -367,9 +368,13 @@
     return { ok: res.ok, data: await res.json() };
   }
 
+  let anneeActuelle = '2024-2025';
+  let ecolesGlobal = [];
+
   async function chargerDonnees() {
     const [ecoles, classes] = await Promise.all([apiGet('/ecoles'), apiGet('/classes')]);
     if (!ecoles || !classes) return;
+    ecolesGlobal = ecoles;
 
     document.getElementById('stat-ecoles').textContent = ecoles.length;
     document.getElementById('stat-classes').textContent = classes.length;
@@ -434,7 +439,20 @@
   }
 
   function ouvrirModalClasse(ecoleId) {
-    document.getElementById('classe-ecole-id').value=ecoleId;
+    // Si ecoleId fourni, on le prend. Sinon on prend la première école disponible
+    const id = ecoleId || (ecolesGlobal.length > 0 ? ecolesGlobal[0].id : '');
+    document.getElementById('classe-ecole-id').value = id;
+
+    // Afficher/masquer le sélecteur d'école
+    const sel = document.getElementById('classe-ecole-select');
+    if (ecolesGlobal.length > 1) {
+      sel.innerHTML = ecolesGlobal.map(e => `<option value="${e.id}" ${e.id == id ? 'selected' : ''}>${e.nom}</option>`).join('');
+      sel.closest('.modal-field').style.display = 'block';
+      sel.onchange = () => document.getElementById('classe-ecole-id').value = sel.value;
+    } else {
+      sel.closest('.modal-field').style.display = 'none';
+    }
+
     ['classe-nom','classe-matiere'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('classe-err').className='modal-err';
     document.getElementById('modal-classe').classList.add('show');
@@ -448,6 +466,7 @@
     const type_periode=document.getElementById('classe-periode').value;
     const err=document.getElementById('classe-err');
     const btn=document.getElementById('btn-save-classe');
+    if (!ecole_id){err.textContent='Aucune école sélectionnée. Ajoutez d\'abord une école.';err.className='modal-err show';return;}
     if (!nom||!matiere){err.textContent='Nom et matière obligatoires.';err.className='modal-err show';return;}
     btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enregistrement...';
     const r=await apiPost('/classes',{ecole_id,nom,matiere,coefficient,type_periode,annee_scolaire:anneeActuelle});
@@ -455,8 +474,6 @@
     if(!r.ok){err.textContent=r.data.error||'Erreur.';err.className='modal-err show';}
     else{fermerModal('modal-classe');chargerDonnees();}
   }
-
-  let anneeActuelle = '2024-2025';
 
   function changerAnnee(val) {
     anneeActuelle = val;

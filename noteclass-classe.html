@@ -490,10 +490,18 @@
         <td class="center"><span class="appr-badge ${appr.cls}">${appr.abbr}</span></td>
         <td><input class="comment-input" type="text" maxlength="120" value="${e.commentaire||''}" placeholder="Commentaire..."
           oninput="updateComment(${e.id},this)" /></td>
-        <td><button class="row-btn" onclick="ouvrirEdit(${e.id},'${e.nom}','${e.prenom}')" title="Modifier" style="margin-right:4px">✏️</button><button class="row-btn" onclick="supprimerEleve(${e.id})" title="Supprimer">🗑</button></td>
+        <td><button class="row-btn edit-btn" data-id="${e.id}" data-nom="${e.nom}" data-prenom="${e.prenom}" title="Modifier" style="margin-right:4px">✏️</button><button class="row-btn" onclick="supprimerEleve(${e.id})" title="Supprimer">🗑</button></td>
       `;
       tbody.appendChild(tr);
     });
+
+    // Délégation d'événement pour les boutons ✏️
+    tbody.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ouvrirEdit(btn.dataset.id, btn.dataset.nom, btn.dataset.prenom);
+      });
+    });
+
     updateStats(liste);
   }
 

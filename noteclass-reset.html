@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoteClass — Réinitialisation du mot de passe</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bleu:#1A237E;--vert:#00897B;--gris:#F5F6FA;--gris2:#E8EAF0;--texte:#1a1a2e;--erreur:#e53935;--succes:#00897B}
+  body{font-family:'DM Sans',sans-serif;background:var(--gris);min-height:100vh;display:flex;align-items:center;justify-content:center}
+  .container{width:100%;max-width:440px;padding:16px}
+  .logo{text-align:center;margin-bottom:32px}
+  .logo-icon{width:56px;height:56px;background:var(--bleu);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 8px 24px rgba(26,35,126,0.3)}
+  .logo-icon svg{width:30px;height:30px;fill:white}
+  .logo h1{font-family:'Playfair Display',serif;font-size:28px;color:var(--bleu)}
+  .logo p{font-size:14px;color:#666;margin-top:4px}
+  .card{background:white;border-radius:20px;padding:36px 32px;box-shadow:0 4px 40px rgba(26,35,126,0.1)}
+  .card h2{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--bleu);margin-bottom:.5rem}
+  .card p{font-size:.85rem;color:#666;margin-bottom:1.5rem}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:13px;font-weight:500;color:var(--texte);margin-bottom:6px}
+  .field input{width:100%;padding:12px 16px;border:2px solid var(--gris2);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--texte);outline:none;transition:border-color .2s}
+  .field input:focus{border-color:var(--bleu)}
+  .btn{width:100%;padding:14px;background:var(--bleu);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;margin-top:8px}
+  .btn:hover{background:#283593;transform:translateY(-1px)}
+  .btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .alert{padding:12px 16px;border-radius:10px;font-size:14px;margin-bottom:16px;display:none}
+  .alert.show{display:block}
+  .alert.error{background:#fdecea;color:var(--erreur);border:1px solid #f5c6cb}
+  .alert.success{background:#e8f5e9;color:var(--succes);border:1px solid #c8e6c9}
+  .back{text-align:center;margin-top:1rem;font-size:.85rem}
+  .back a{color:var(--bleu);text-decoration:none;font-weight:500}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+    </div>
+    <h1>NoteClass</h1>
+    <p>Gestion des notes scolaires</p>
+  </div>
+
+  <div class="card" id="card-forgot" style="display:none">
+    <h2>🔑 Mot de passe oublié</h2>
+    <p>Entrez votre email et nous vous enverrons un lien de réinitialisation.</p>
+    <div class="alert" id="alert-forgot"></div>
+    <div class="field">
+      <label>Adresse email</label>
+      <input type="email" id="forgot-email" placeholder="prof@ecole.bj">
+    </div>
+    <button class="btn" id="btn-forgot" onclick="envoyerLien()">Envoyer le lien</button>
+    <div class="back"><a href="noteclass-auth.html">← Retour à la connexion</a></div>
+  </div>
+
+  <div class="card" id="card-reset" style="display:none">
+    <h2>🔒 Nouveau mot de passe</h2>
+    <p>Choisissez un nouveau mot de passe pour votre compte.</p>
+    <div class="alert" id="alert-reset"></div>
+    <div class="field">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="new-password" placeholder="Minimum 6 caractères">
+    </div>
+    <div class="field">
+      <label>Confirmer le mot de passe</label>
+      <input type="password" id="confirm-password" placeholder="••••••••">
+    </div>
+    <button class="btn" id="btn-reset" onclick="reinitialiser()">Réinitialiser le mot de passe</button>
+    <div class="back"><a href="noteclass-auth.html">← Retour à la connexion</a></div>
+  </div>
+</div>
+
+<script>
+  const API = 'https://noteclass-backend.onrender.com/api';
+  const params = new URLSearchParams(window.location.search);
+  const resetToken = params.get('token');
+
+  // Afficher le bon formulaire
+  if (resetToken) {
+    document.getElementById('card-reset').style.display = 'block';
+  } else {
+    document.getElementById('card-forgot').style.display = 'block';
+  }
+
+  function showAlert(id, msg, type='error') {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `alert show ${type}`;
+  }
+
+  async function envoyerLien() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) return showAlert('alert-forgot', 'Entrez votre adresse email.');
+    const btn = document.getElementById('btn-forgot');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Envoi en cours...';
+    try {
+      const res = await fetch(`${API}/auth/forgot-password`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email})
+      });
+      const data = await res.json();
+      if (res.ok) showAlert('alert-forgot', '✅ ' + data.message, 'success');
+      else showAlert('alert-forgot', data.error || 'Erreur.');
+    } catch(e) {
+      showAlert('alert-forgot', 'Erreur de connexion.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Envoyer le lien';
+  }
+
+  async function reinitialiser() {
+    const password = document.getElementById('new-password').value;
+    const confirm = document.getElementById('confirm-password').value;
+    if (password !== confirm) return showAlert('alert-reset', 'Les mots de passe ne correspondent pas.');
+    if (password.length < 6) return showAlert('alert-reset', 'Minimum 6 caractères.');
+    const btn = document.getElementById('btn-reset');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Réinitialisation...';
+    try {
+      const res = await fetch(`${API}/auth/reset-password`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token: resetToken, password})
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showAlert('alert-reset', '✅ Mot de passe réinitialisé ! Redirection...', 'success');
+        setTimeout(() => window.location.href = 'noteclass-auth.html', 2000);
+      } else {
+        showAlert('alert-reset', data.error || 'Erreur.');
+      }
+    } catch(e) {
+      showAlert('alert-reset', 'Erreur de connexion.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Réinitialiser le mot de passe';
+  }
+</script>
+</body>
+</html>

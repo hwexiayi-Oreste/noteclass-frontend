@@ -321,10 +321,13 @@
 </div>
 
 
+<!-- MODAL CLASSE -->
+<div class="modal-overlay" id="modal-classe">
   <div class="modal">
-    <h3>➕ Nouvelle classe</h3>
+    <h3 id="modal-classe-titre">➕ Nouvelle classe</h3>
     <div class="modal-err" id="classe-err"></div>
     <input type="hidden" id="classe-ecole-id">
+    <input type="hidden" id="classe-edit-id">
     <div class="modal-field" style="display:none"><label>École</label><select id="classe-ecole-select"></select></div>
     <div class="modal-field"><label>Nom de la classe *</label><input type="text" id="classe-nom" placeholder="Ex: 6ème A"></div>
     <div class="modal-field"><label>Matière *</label><input type="text" id="classe-matiere" placeholder="Ex: Mathématiques"></div>
@@ -411,7 +414,18 @@
       const em = ecole.type === 'prive' ? '🏫' : '📚';
       const classesHTML = cs.length === 0
         ? `<div class="empty-state" style="padding:.75rem 1rem;font-size:.78rem;text-align:left">Aucune classe · <a href="#" onclick="ouvrirModalClasse(${ecole.id})" style="color:var(--emerald)">Ajouter</a></div>`
-        : cs.map(c => `<a class="classe-row" href="noteclass-classe.html?classe_id=${c.id}"><span class="classe-dot"></span><span class="classe-name">${c.nom}</span><span class="classe-count">${c.matiere} · Coeff. ${c.coefficient}</span><span class="classe-arrow">›</span></a>`).join('')
+        : cs.map(c => `
+            <div class="classe-row" style="justify-content:space-between">
+              <a href="noteclass-classe.html?classe_id=${c.id}" style="display:flex;align-items:center;gap:.75rem;flex:1;text-decoration:none">
+                <span class="classe-dot"></span>
+                <span class="classe-name">${c.nom}</span>
+                <span class="classe-count">${c.matiere} · Coeff. ${c.coefficient}</span>
+              </a>
+              <div style="display:flex;gap:.4rem;flex-shrink:0">
+                <button onclick="event.stopPropagation();modifierClasse(${c.id},'${c.nom}','${c.matiere}',${c.coefficient},'${c.type_periode}')" title="Modifier" style="background:rgba(26,35,126,0.08);border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.8rem">✏️</button>
+                <button onclick="event.stopPropagation();supprimerClasse(${c.id})" title="Supprimer" style="background:rgba(244,67,54,0.08);border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.8rem">🗑</button>
+              </div>
+            </div>`).join('')
           + `<div style="padding:.25rem .75rem .5rem"><button onclick="ouvrirModalClasse(${ecole.id})" style="font-size:.75rem;color:var(--emerald);border:none;background:none;cursor:pointer;font-family:inherit;font-weight:600">+ Ajouter une classe</button></div>`;
       return `<div class="ecole-item"><div class="ecole-header" onclick="toggleEcole(this)"><div class="ecole-badge ${tc}">${em}</div><div class="ecole-info"><div class="ecole-name">${ecole.nom}</div><div class="ecole-meta">${ecole.ville||'—'} · ${cs.length} classe(s)</div></div><span class="ecole-type ${tc}">${tl}</span><span class="ecole-toggle">▾</span></div><div class="classes-list open">${classesHTML}</div></div>`;
     }).join('');
@@ -438,12 +452,30 @@
     else { fermerModal('modal-ecole'); chargerDonnees(); }
   }
 
+  function modifierClasse(id, nom, matiere, coeff, periode) {
+    document.getElementById('classe-edit-id').value = id;
+    document.getElementById('classe-nom').value = nom;
+    document.getElementById('classe-matiere').value = matiere;
+    document.getElementById('classe-coeff').value = coeff;
+    document.getElementById('classe-periode').value = periode;
+    document.getElementById('modal-classe-titre').textContent = '✏️ Modifier la classe';
+    document.getElementById('classe-err').className = 'modal-err';
+    document.getElementById('modal-classe').classList.add('show');
+  }
+
+  async function supprimerClasse(id) {
+    if (!confirm('Supprimer cette classe et tous ses élèves/notes ?')) return;
+    const res = await fetch(`${API}/classes/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+    const data = await res.json();
+    if (res.ok) chargerDonnees();
+    else alert('Erreur : ' + (data.error || 'Impossible de supprimer'));
+  }
+
   function ouvrirModalClasse(ecoleId) {
-    // Si ecoleId fourni, on le prend. Sinon on prend la première école disponible
+    document.getElementById('classe-edit-id').value = '';
+    document.getElementById('modal-classe-titre').textContent = '➕ Nouvelle classe';
     const id = ecoleId || (ecolesGlobal.length > 0 ? ecolesGlobal[0].id : '');
     document.getElementById('classe-ecole-id').value = id;
-
-    // Afficher/masquer le sélecteur d'école
     const sel = document.getElementById('classe-ecole-select');
     if (ecolesGlobal.length > 1) {
       sel.innerHTML = ecolesGlobal.map(e => `<option value="${e.id}" ${e.id == id ? 'selected' : ''}>${e.nom}</option>`).join('');
@@ -452,26 +484,41 @@
     } else {
       sel.closest('.modal-field').style.display = 'none';
     }
-
-    ['classe-nom','classe-matiere'].forEach(id=>document.getElementById(id).value='');
+    ['classe-nom','classe-matiere'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('classe-err').className='modal-err';
     document.getElementById('modal-classe').classList.add('show');
   }
 
   async function sauvegarderClasse() {
-    const ecole_id=document.getElementById('classe-ecole-id').value;
-    const nom=document.getElementById('classe-nom').value.trim();
-    const matiere=document.getElementById('classe-matiere').value.trim();
-    const coefficient=document.getElementById('classe-coeff').value;
-    const type_periode=document.getElementById('classe-periode').value;
-    const err=document.getElementById('classe-err');
-    const btn=document.getElementById('btn-save-classe');
-    if (!ecole_id){err.textContent='Aucune école sélectionnée. Ajoutez d\'abord une école.';err.className='modal-err show';return;}
+    const editId = document.getElementById('classe-edit-id').value;
+    const ecole_id = document.getElementById('classe-ecole-id').value;
+    const nom = document.getElementById('classe-nom').value.trim();
+    const matiere = document.getElementById('classe-matiere').value.trim();
+    const coefficient = document.getElementById('classe-coeff').value;
+    const type_periode = document.getElementById('classe-periode').value;
+    const err = document.getElementById('classe-err');
+    const btn = document.getElementById('btn-save-classe');
     if (!nom||!matiere){err.textContent='Nom et matière obligatoires.';err.className='modal-err show';return;}
+    if (!editId && !ecole_id){err.textContent='Aucune école sélectionnée.';err.className='modal-err show';return;}
     btn.disabled=true; btn.innerHTML='<span class="spin"></span>Enregistrement...';
-    const r=await apiPost('/classes',{ecole_id,nom,matiere,coefficient,type_periode,annee_scolaire:anneeActuelle});
+
+    let res, data;
+    if (editId) {
+      // Modification
+      const r = await fetch(`${API}/classes/${editId}`, {
+        method:'PUT',
+        headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},
+        body: JSON.stringify({nom, matiere, coefficient, type_periode, annee_scolaire: anneeActuelle})
+      });
+      data = await r.json(); res = r;
+    } else {
+      // Création
+      const r = await apiPost('/classes', {ecole_id, nom, matiere, coefficient, type_periode, annee_scolaire: anneeActuelle});
+      data = r.data; res = {ok: r.ok};
+    }
+
     btn.disabled=false; btn.innerHTML='Enregistrer';
-    if(!r.ok){err.textContent=r.data.error||'Erreur.';err.className='modal-err show';}
+    if(!res.ok){err.textContent=data.error||'Erreur.';err.className='modal-err show';}
     else{fermerModal('modal-classe');chargerDonnees();}
   }
 

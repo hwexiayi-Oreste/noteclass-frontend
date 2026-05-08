@@ -272,7 +272,28 @@
   </div>
 </div>
 
-<!-- MODAL AJOUT ÉLÈVE -->
+<!-- MODAL MODIFIER ÉLÈVE -->
+<div class="modal-overlay" id="modal-edit" onclick="closeEditOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✏️ Modifier l'élève</span>
+      <button class="modal-close" onclick="closeEdit()">✕</button>
+    </div>
+    <input type="hidden" id="edit-id">
+    <div class="form-group">
+      <label>Nom</label>
+      <input type="text" id="edit-nom" placeholder="Ex: DOSSOU" />
+    </div>
+    <div class="form-group">
+      <label>Prénom</label>
+      <input type="text" id="edit-prenom" placeholder="Ex: Félicité" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEdit()">Annuler</button>
+      <button class="btn-confirm" id="btn-confirm-edit" onclick="modifierEleve()">Enregistrer</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
   <div class="modal">
     <div class="modal-header">
@@ -469,7 +490,7 @@
         <td class="center"><span class="appr-badge ${appr.cls}">${appr.abbr}</span></td>
         <td><input class="comment-input" type="text" maxlength="120" value="${e.commentaire||''}" placeholder="Commentaire..."
           oninput="updateComment(${e.id},this)" /></td>
-        <td><button class="row-btn" onclick="supprimerEleve(${e.id})" title="Supprimer">🗑</button></td>
+        <td><button class="row-btn" onclick="ouvrirEdit(${e.id},'${e.nom}','${e.prenom}')" title="Modifier" style="margin-right:4px">✏️</button><button class="row-btn" onclick="supprimerEleve(${e.id})" title="Supprimer">🗑</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -583,6 +604,42 @@
 
     if (result.ok) toast('✅ Notes enregistrées avec succès !', 'success');
     else toast('❌ Erreur : ' + (result.data.error || 'Impossible d\'enregistrer'), 'error');
+  }
+
+  // MODIFIER ÉLÈVE
+  function ouvrirEdit(id, nom, prenom) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-nom').value = nom;
+    document.getElementById('edit-prenom').value = prenom;
+    document.getElementById('modal-edit').classList.add('show');
+    document.getElementById('edit-nom').focus();
+  }
+  function closeEdit() { document.getElementById('modal-edit').classList.remove('show'); }
+  function closeEditOutside(e) { if (e.target===document.getElementById('modal-edit')) closeEdit(); }
+
+  async function modifierEleve() {
+    const id = document.getElementById('edit-id').value;
+    const nom = document.getElementById('edit-nom').value.trim().toUpperCase();
+    const prenom = document.getElementById('edit-prenom').value.trim();
+    if (!nom || !prenom) { toast('Remplissez le nom et le prénom.', 'error'); return; }
+    const btn = document.getElementById('btn-confirm-edit');
+    btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+    const res = await fetch(`${API}/eleves/${id}`, {
+      method: 'PUT',
+      headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({nom, prenom})
+    });
+    const data = await res.json();
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+    if (res.ok) {
+      const e = eleves.find(x => x.id === id || x.id == id);
+      if (e) { e.nom = nom; e.prenom = prenom; }
+      closeEdit();
+      render(eleves);
+      toast(`✅ Élève modifié avec succès !`, 'success');
+    } else {
+      toast('❌ ' + (data.error || 'Erreur.'), 'error');
+    }
   }
 
   // AJOUTER ÉLÈVE

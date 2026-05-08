@@ -360,14 +360,22 @@
   if (!token) window.location.href = 'noteclass-auth.html';
   const user = JSON.parse(localStorage.getItem('nc_user') || '{}');
 
-  function initUser() {
-    const nom = user.nom || '', prenom = user.prenom || '';
+  async function initUser() {
+    let u = JSON.parse(localStorage.getItem('nc_user') || '{}');
+    // Si nom manquant (connexion Google), récupérer depuis l'API
+    if (!u.nom && !u.prenom) {
+      try {
+        const res = await fetch(`${API}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) { u = await res.json(); localStorage.setItem('nc_user', JSON.stringify(u)); }
+      } catch(e) {}
+    }
+    const nom = u.nom || '', prenom = u.prenom || '';
     const initiales = (prenom[0]||'') + (nom[0]||'');
     document.getElementById('prof-avatar').textContent = initiales.toUpperCase() || '?';
     document.getElementById('prof-name').textContent = `${prenom} ${nom}`.trim() || 'Professeur';
-    document.getElementById('prof-plan').textContent = user.plan === 'pro' ? 'Plan Pro ⭐' : 'Plan Découverte · Gratuit';
-    document.getElementById('welcome-msg').textContent = `Bonjour, Prof. ${nom} 👋`;
-    document.getElementById('stat-plan').textContent = user.plan === 'pro' ? 'Pro ⭐' : 'Gratuit';
+    document.getElementById('prof-plan').textContent = u.plan === 'pro' ? 'Plan Pro ⭐' : 'Plan Découverte · Gratuit';
+    document.getElementById('welcome-msg').textContent = nom ? `Bonjour, Prof. ${nom} 👋` : 'Bonjour 👋';
+    document.getElementById('stat-plan').textContent = u.plan === 'pro' ? 'Pro ⭐' : 'Gratuit';
   }
 
   async function apiGet(url) {

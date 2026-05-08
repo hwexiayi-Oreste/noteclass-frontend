@@ -199,6 +199,7 @@
       </div>
     </div>
     <div class="topbar-right">
+      <button class="btn-sm btn-outline" onclick="voirReleve()">📄 Relevé PDF</button>
       <button class="btn-sm btn-outline" onclick="imprimerNotes()">🖨️ Imprimer</button>
       <button class="btn-sm btn-primary-sm" onclick="openModal()">+ Ajouter un élève</button>
     </div>
@@ -721,6 +722,10 @@
     } else {
       toast('❌ Erreur lors de la mise à jour', 'error');
     }
+  }
+
+  function voirReleve() {
+    window.open(`noteclass-releve.html?classe_id=${classeId}`, '_blank');
   }
 
   function imprimerNotes() {

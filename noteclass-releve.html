@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoteClass — Relevé de notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1A237E; --emerald: #00897B;
+    --gray: #F5F6FA; --border: #E8EDF2; --text: #1C1C2E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--gray); color: var(--text); }
+
+  /* TOOLBAR — masquée à l'impression */
+  .toolbar {
+    background: var(--navy);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 12px; }
+  .toolbar h1 { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: white; }
+  .toolbar a { color: rgba(255,255,255,0.7); font-size: .85rem; text-decoration: none; }
+  .toolbar a:hover { color: white; }
+  .toolbar-right { display: flex; gap: 10px; }
+  .btn { padding: 8px 18px; border-radius: 8px; font-size: .85rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: all .2s; }
+  .btn-white { background: white; color: var(--navy); }
+  .btn-white:hover { background: #f0f0f0; }
+  .btn-emerald { background: var(--emerald); color: white; }
+  .btn-emerald:hover { background: #00796B; }
+
+  /* CONTROLES */
+  .controls {
+    background: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .ctrl-group { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
+  .ctrl-group label { font-weight: 600; color: var(--navy); }
+  .ctrl-group select, .ctrl-group input {
+    padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: .85rem; outline: none; color: var(--text);
+  }
+  .ctrl-group select:focus, .ctrl-group input:focus { border-color: var(--navy); }
+
+  /* PAGE A4 */
+  .page-container { padding: 24px; display: flex; justify-content: center; }
+  .page {
+    background: white;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 18mm 16mm;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+    border-radius: 4px;
+  }
+
+  /* EN-TÊTE */
+  .releve-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--navy);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .header-left {}
+  .header-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .header-logo span { color: var(--emerald); }
+  .header-sub { font-size: .75rem; color: #666; }
+  .header-right { text-align: right; }
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .header-badge {
+    display: inline-block;
+    background: var(--navy);
+    color: white;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 50px;
+  }
+
+  /* INFOS CLASSE */
+  .infos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .info-box {
+    background: var(--gray);
+    border-radius: 8px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--navy);
+  }
+  .info-box.green { border-left-color: var(--emerald); }
+  .info-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #888; margin-bottom: 3px; }
+  .info-value { font-size: .9rem; font-weight: 700; color: var(--navy); }
+
+  /* TABLEAU */
+  .table-title {
+    font-family: 'Playfair Display', serif;
+    font-size: .95rem;
+    font-weight: 900;
+    color: var(--navy);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+  thead tr { background: var(--navy); color: white; }
+  thead th { padding: 8px 6px; text-align: center; font-weight: 700; font-size: .7rem; letter-spacing: .3px; }
+  thead th:first-child { text-align: left; padding-left: 10px; }
+  thead th.grp { background: rgba(255,255,255,0.1); border-bottom: 2px solid rgba(255,255,255,0.3); }
+  tbody tr { border-bottom: 1px solid #eee; }
+  tbody tr:nth-child(even) { background: #fafbff; }
+  tbody td { padding: 7px 6px; text-align: center; }
+  tbody td:first-child { text-align: left; padding-left: 10px; font-weight: 600; }
+  .num { color: #aaa; font-size: .7rem; width: 24px; }
+  .note-val { font-weight: 700; color: var(--text); }
+  .note-empty { color: #ccc; font-size: .75rem; }
+  .moy-cell { font-family: 'Playfair Display', serif; font-size: .95rem; font-weight: 900; }
+  .moy-tb { color: #2E7D32; } .moy-b { color: #558B2F; } .moy-ab { color: #F9A825; }
+  .moy-p { color: #E65100; } .moy-i { color: #BF360C; } .moy-ti { color: #B71C1C; }
+  .appr-badge {
+    font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 50px; white-space: nowrap;
+  }
+  .appr-tb{background:#E8F5E9;color:#2E7D32} .appr-b{background:#F1F8E9;color:#558B2F}
+  .appr-ab{background:#FFFDE7;color:#F57F17} .appr-p{background:#FFF3E0;color:#E65100}
+  .appr-i{background:#FBE9E7;color:#BF360C} .appr-ti{background:#FFEBEE;color:#B71C1C}
+  .comment-cell { font-size: .68rem; color: #555; font-style: italic; max-width: 120px; }
+
+  /* PIED DE TABLEAU */
+  tfoot tr { background: var(--navy); color: white; }
+  tfoot td { padding: 8px 6px; font-weight: 700; font-size: .78rem; text-align: center; }
+  tfoot td:first-child { text-align: left; padding-left: 10px; }
+
+  /* STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+  .stat-box { background: var(--gray); border-radius: 8px; padding: 10px; text-align: center; }
+  .stat-val { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--navy); }
+  .stat-lbl { font-size: .65rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+  /* SIGNATURES */
+  .signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-top: 32px;
+    border-top: 1px solid #ddd;
+    padding-top: 20px;
+  }
+  .sig-box { text-align: center; }
+  .sig-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: #888; margin-bottom: 40px; }
+  .sig-line { border-top: 1px solid #333; margin: 0 20px; }
+  .sig-name { font-size: .7rem; color: #555; margin-top: 6px; }
+
+  /* PIED DE PAGE */
+  .releve-footer {
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-left { font-size: .65rem; color: #aaa; }
+  .footer-right { font-size: .65rem; color: #aaa; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 60px; color: #888; font-size: .95rem; }
+
+  /* IMPRESSION */
+  @media print {
+    body { background: white; }
+    .toolbar, .controls { display: none !important; }
+    .page-container { padding: 0; }
+    .page { box-shadow: none; border-radius: 0; width: 100%; min-height: auto; padding: 15mm 12mm; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <a href="noteclass-dashboard.html">← Tableau de bord</a>
+    <h1>Relevé de notes</h1>
+  </div>
+  <div class="toolbar-right">
+    <button class="btn btn-white" onclick="window.print()">🖨️ Imprimer / PDF</button>
+  </div>
+</div>
+
+<!-- CONTROLES -->
+<div class="controls">
+  <div class="ctrl-group">
+    <label>Période :</label>
+    <select id="periode-sel" onchange="charger()">
+      <option value="1">Période 1</option>
+      <option value="2">Période 2</option>
+      <option value="3">Période 3</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label>Nb interros :</label>
+    <select id="interros-sel" onchange="charger()">
+      <option value="1">1 interro</option>
+      <option value="2">2 interros</option>
+      <option value="3">3 interros</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label>Professeur :</label>
+    <input type="text" id="prof-input" placeholder="Nom du professeur" style="width:180px">
+  </div>
+</div>
+
+<!-- PAGE A4 -->
+<div class="page-container">
+  <div class="page" id="page">
+    <div class="loading" id="loading">⏳ Chargement du relevé...</div>
+    <div id="releve-content" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+  const API = 'https://noteclass-backend.onrender.com/api';
+  const token = localStorage.getItem('nc_token');
+  if (!token) window.location.href = 'noteclass-auth.html';
+
+  const user = JSON.parse(localStorage.getItem('nc_user') || '{}');
+  const params = new URLSearchParams(window.location.search);
+  const classeId = params.get('classe_id');
+
+  if (!classeId) {
+    document.getElementById('loading').textContent = '❌ Aucune classe sélectionnée. Retournez au tableau de bord.';
+  }
+
+  async function apiGet(url) {
+    const res = await fetch(`${API}${url}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.status === 401) { window.location.href = 'noteclass-auth.html'; return null; }
+    return res.json();
+  }
+
+  function getAppr(moy) {
+    if (moy === null) return { label:'—', abbr:'—', cls:'', moy_cls:'' };
+    if (moy >= 16) return { label:'Très Bien', abbr:'TB', cls:'appr-tb', moy_cls:'moy-tb' };
+    if (moy >= 14) return { label:'Bien', abbr:'B', cls:'appr-b', moy_cls:'moy-b' };
+    if (moy >= 12) return { label:'Assez Bien', abbr:'AB', cls:'appr-ab', moy_cls:'moy-ab' };
+    if (moy >= 10) return { label:'Passable', abbr:'P', cls:'appr-p', moy_cls:'moy-p' };
+    if (moy >= 8)  return { label:'Insuffisant', abbr:'I', cls:'appr-i', moy_cls:'moy-i' };
+    return { label:'Très Insuffisant', abbr:'TI', cls:'appr-ti', moy_cls:'moy-ti' };
+  }
+
+  function calcMoy(n, nbI) {
+    const interros = [];
+    for (let i = 1; i <= nbI; i++) {
+      if (n[`interro${i}`] != null && n[`interro${i}`] !== '') interros.push(parseFloat(n[`interro${i}`]));
+    }
+    const devoirs = [];
+    if (n.devoir1 != null && n.devoir1 !== '') devoirs.push(parseFloat(n.devoir1));
+    if (n.devoir2 != null && n.devoir2 !== '') devoirs.push(parseFloat(n.devoir2));
+    const moyI = interros.length ? interros.reduce((a,b)=>a+b,0)/interros.length : null;
+    const moyD = devoirs.length ? devoirs.reduce((a,b)=>a+b,0)/devoirs.length : null;
+    if (moyI === null && moyD === null) return null;
+    let t = 0, p = 0;
+    if (moyI !== null) { t += moyI; p++; }
+    if (moyD !== null) { t += moyD; p++; }
+    return Math.round((t/p)*100)/100;
+  }
+
+  function noteDisplay(val) {
+    if (val == null || val === '') return `<span class="note-empty">—</span>`;
+    return `<span class="note-val">${parseFloat(val).toFixed(2)}</span>`;
+  }
+
+  async function charger() {
+    if (!classeId) return;
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('releve-content').style.display = 'none';
+
+    const nbI = parseInt(document.getElementById('interros-sel').value);
+    const periode = parseInt(document.getElementById('periode-sel').value);
+    const profName = document.getElementById('prof-input').value || `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Le Professeur';
+
+    const [classes, notesData] = await Promise.all([
+      apiGet('/classes'),
+      apiGet(`/notes?classe_id=${classeId}&periode=${periode}&nb_interros=${nbI}`)
+    ]);
+    if (!classes || !notesData) return;
+
+    const classe = classes.find(c => c.id == classeId);
+    if (!classe) { document.getElementById('loading').textContent = '❌ Classe introuvable.'; return; }
+
+    const elevesData = notesData.eleves || [];
+    const periodeLabel = classe.type_periode === 'trimestre' ? `${periode}er Trimestre` : `${periode}er Semestre`;
+    const today = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+
+    // Calculs stats
+    const moyennes = elevesData.map(e => {
+      const n = e.notes || {};
+      return calcMoy(n, nbI);
+    }).filter(m => m !== null);
+    const moyClasse = moyennes.length ? (moyennes.reduce((a,b)=>a+b,0)/moyennes.length).toFixed(2) : '—';
+    const nbReussi = moyennes.filter(m => m >= 10).length;
+    const meilleur = moyennes.length ? Math.max(...moyennes).toFixed(2) : '—';
+    const plusBas = moyennes.length ? Math.min(...moyennes).toFixed(2) : '—';
+
+    // Colonnes interros
+    const interroCols = Array.from({length: nbI}, (_, i) =>
+      `<th>I${i+1}<br><span style="font-size:.6rem;opacity:.7">/20</span></th>`
+    ).join('');
+
+    // Lignes élèves
+    const lignes = elevesData.map((e, idx) => {
+      const n = e.notes || {};
+      const moy = calcMoy(n, nbI);
+      const appr = getAppr(moy);
+      const interroCells = Array.from({length: nbI}, (_, i) =>
+        `<td>${noteDisplay(n[`interro${i+1}`])}</td>`
+      ).join('');
+      return `
+        <tr>
+          <td class="num">${idx+1}</td>
+          <td style="text-align:left;padding-left:10px;font-weight:600">${e.eleve.nom} ${e.eleve.prenom}</td>
+          ${interroCells}
+          <td>${noteDisplay(n.devoir1)}</td>
+          <td>${noteDisplay(n.devoir2)}</td>
+          <td class="moy-cell ${appr.moy_cls}">${moy !== null ? moy.toFixed(2) : '—'}</td>
+          <td><span class="appr-badge ${appr.cls}">${appr.abbr}</span></td>
+          <td class="comment-cell">${e.commentaire || ''}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('releve-content').innerHTML = `
+      <!-- EN-TÊTE -->
+      <div class="releve-header">
+        <div class="header-left">
+          <div class="header-logo">Note<span>Class</span></div>
+          <div class="header-sub">Gestion des notes scolaires</div>
+        </div>
+        <div class="header-right">
+          <div class="header-title">Relevé de Notes</div>
+          <span class="header-badge">${periodeLabel} · ${classe.annee_scolaire}</span>
+        </div>
+      </div>
+
+      <!-- INFOS CLASSE -->
+      <div class="infos-grid">
+        <div class="info-box">
+          <div class="info-label">Classe</div>
+          <div class="info-value">${classe.nom}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">Matière</div>
+          <div class="info-value">${classe.matiere}</div>
+        </div>
+        <div class="info-box green">
+          <div class="info-label">Coefficient</div>
+          <div class="info-value">${classe.coefficient}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">Professeur</div>
+          <div class="info-value">${profName}</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">Effectif</div>
+          <div class="info-value">${elevesData.length} élève(s)</div>
+        </div>
+        <div class="info-box green">
+          <div class="info-label">Date d'édition</div>
+          <div class="info-value" style="font-size:.8rem">${today}</div>
+        </div>
+      </div>
+
+      <!-- TABLEAU DES NOTES -->
+      <div class="table-title">📊 Notes et moyennes — ${periodeLabel}</div>
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="1">#</th>
+            <th rowspan="1" style="text-align:left">Nom & Prénom</th>
+            ${interroCols}
+            <th>D1<br><span style="font-size:.6rem;opacity:.7">/20</span></th>
+            <th>D2<br><span style="font-size:.6rem;opacity:.7">/20</span></th>
+            <th>Moyenne</th>
+            <th>Appréciation</th>
+            <th>Commentaire</th>
+          </tr>
+        </thead>
+        <tbody>${lignes}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Moyenne de classe</td>
+            ${Array(nbI + 2).fill('<td>—</td>').join('')}
+            <td>${moyClasse}</td>
+            <td>${getAppr(moyClasse !== '—' ? parseFloat(moyClasse) : null).abbr}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- STATISTIQUES -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-val">${moyClasse}</div>
+          <div class="stat-lbl">Moyenne classe</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:var(--emerald)">${nbReussi}/${elevesData.length}</div>
+          <div class="stat-lbl">Élèves ≥ 10</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:#2E7D32">${meilleur}</div>
+          <div class="stat-lbl">Meilleure note</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:#B71C1C">${plusBas}</div>
+          <div class="stat-lbl">Note la plus basse</div>
+        </div>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div class="signatures">
+        <div class="sig-box">
+          <div class="sig-title">Le Professeur</div>
+          <div class="sig-line"></div>
+          <div class="sig-name">${profName}</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-title">Le Directeur</div>
+          <div class="sig-line"></div>
+          <div class="sig-name">&nbsp;</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-title">Cachet de l'établissement</div>
+          <div class="sig-line"></div>
+          <div class="sig-name">&nbsp;</div>
+        </div>
+      </div>
+
+      <!-- PIED DE PAGE -->
+      <div class="releve-footer">
+        <div class="footer-left">NoteClass — Gestion des notes scolaires</div>
+        <div class="footer-right">Édité le ${today}</div>
+      </div>
+    `;
+
+    document.title = `Relevé — ${classe.nom} ${classe.matiere} — ${periodeLabel}`;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('releve-content').style.display = 'block';
+  }
+
+  // Pré-remplir nom prof
+  document.getElementById('prof-input').value = `${user.prenom || ''} ${user.nom || ''}`.trim();
+  document.getElementById('prof-input').addEventListener('input', () => charger());
+
+  if (classeId) charger();
+</script>
+</body>
+</html>

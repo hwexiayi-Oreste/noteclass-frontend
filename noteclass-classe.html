@@ -144,6 +144,17 @@
     .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spinAnim 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spinAnim { to { transform: rotate(360deg); } }
     @media (max-width: 768px) { .sidebar{transform:translateX(-100%)} .sidebar.open{transform:translateX(0)} .main{margin-left:0} .menu-toggle{display:block} .content{padding:1.1rem} .topbar{padding:0 1.1rem} .classe-stats{display:none} .toolbar{flex-direction:column;align-items:flex-start} }
+    @media print {
+      .sidebar, .topbar, .toolbar, .table-footer, .toast, .modal-overlay, .row-btn, .comment-input, .note-input { display: none !important; }
+      .main { margin-left: 0 !important; }
+      body { background: white !important; }
+      .classe-header { background: var(--navy-dark) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .table-wrap { border: 1px solid #ccc; }
+      .formule-bar { border: 1px solid #ccc; margin-bottom: 1rem; }
+      .content { padding: 0.5rem; }
+      table { font-size: 11px; }
+      thead th { background: #f5f5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
@@ -188,6 +199,7 @@
       </div>
     </div>
     <div class="topbar-right">
+      <button class="btn-sm btn-outline" onclick="imprimerNotes()">🖨️ Imprimer</button>
       <button class="btn-sm btn-primary-sm" onclick="openModal()">+ Ajouter un élève</button>
     </div>
   </header>
@@ -213,8 +225,13 @@
         Moy. interros = <span>(I1 + I2 + …) ÷ nb interros</span>
         &nbsp;·&nbsp; Moy. devoirs = <span>(D1 + D2) ÷ 2</span>
         &nbsp;·&nbsp; <strong>Moyenne = <span>(Moy. interros + Moy. devoirs) ÷ 2</span></strong>
-        &nbsp;·&nbsp; Coefficient : <span id="coeff-display">—</span>
       </span>
+      <span class="formule-label" style="margin-left:auto">Coefficient :</span>
+      <select id="coeff-select" onchange="modifierCoefficient(this.value)" style="border:1.5px solid var(--border);border-radius:8px;padding:.3rem .6rem;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:700;color:var(--navy);background:var(--white);outline:none;cursor:pointer">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+        <option value="7">7</option><option value="8">8</option>
+      </select>
     </div>
 
     <!-- TOOLBAR -->
@@ -379,7 +396,7 @@
     document.title = `NoteClass — ${classeInfo.nom} · ${classeInfo.matiere}`;
     document.getElementById('classe-titre').textContent = `${classeInfo.nom} — ${classeInfo.matiere}`;
     document.getElementById('breadcrumb-classe').textContent = `${classeInfo.nom} — ${classeInfo.matiere}`;
-    document.getElementById('coeff-display').textContent = classeInfo.coefficient;
+    document.getElementById('coeff-select').value = classeInfo.coefficient || 1;
     document.getElementById('classe-meta').innerHTML = `
       <span class="meta-pill">📅 ${classeInfo.type_periode === 'trimestre' ? 'Trimestre' : 'Semestre'} · ${classeInfo.annee_scolaire}</span>
       <span class="meta-pill">⚖️ Coefficient ${classeInfo.coefficient}</span>
@@ -690,6 +707,25 @@
   function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
   function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
   function deconnexion() { localStorage.removeItem('nc_token'); localStorage.removeItem('nc_user'); window.location.href = 'noteclass-auth.html'; }
+
+  async function modifierCoefficient(val) {
+    if (!classeId || !classeInfo) return;
+    const res = await fetch(`${API}/classes/${classeId}`, {
+      method: 'PUT',
+      headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({coefficient: parseInt(val)})
+    });
+    if (res.ok) {
+      classeInfo.coefficient = parseInt(val);
+      toast(`✅ Coefficient mis à jour : ${val}`, 'success');
+    } else {
+      toast('❌ Erreur lors de la mise à jour', 'error');
+    }
+  }
+
+  function imprimerNotes() {
+    window.print();
+  }
 
   // Masquer colonnes interros au démarrage
   document.getElementById('th-i2').style.display = 'none';

@@ -153,8 +153,9 @@
   </div>
   <nav class="sidebar-nav">
     <span class="nav-section-label">Principal</span>
-    <a class="nav-item active" href="noteclass-dashboard.html"><span class="nav-icon">🏠</span> Tableau de bord</a>
+    <a class="nav-item" href="noteclass-dashboard.html"><span class="nav-icon">🏠</span> Tableau de bord</a>
     <a class="nav-item" href="noteclass-classe.html"><span class="nav-icon">📝</span> Saisie des notes</a>
+    <a class="nav-item" href="#" onclick="ouvrirHistorique()"><span class="nav-icon">📋</span> Historique</a>
     <span class="nav-section-label">Compte</span>
     <a class="nav-item" href="#" onclick="ouvrirModalPro()"><span class="nav-icon">💎</span> Passer au Pro</a>
     <button class="nav-item" onclick="deconnexion()"><span class="nav-icon">🚪</span> Déconnexion</button>
@@ -295,6 +296,19 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="fermerModal('modal-ecole')">Annuler</button>
       <button class="btn-save" id="btn-save-ecole" onclick="sauvegarderEcole()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTORIQUE -->
+<div class="modal-overlay" id="modal-historique">
+  <div class="modal" style="max-width:500px">
+    <h3>📋 Historique de l'application</h3>
+    <div id="historique-content" style="margin-top:1rem;max-height:400px;overflow-y:auto">
+      <div class="loading-state">⏳ Chargement...</div>
+    </div>
+    <div style="margin-top:1.25rem">
+      <button class="btn-cancel" onclick="fermerModal('modal-historique')" style="width:100%">Fermer</button>
     </div>
   </div>
 </div>
@@ -529,6 +543,52 @@
 
   function ouvrirModalPro() {
     document.getElementById('modal-pro').classList.add('show');
+  }
+
+  async function ouvrirHistorique() {
+    document.getElementById('modal-historique').classList.add('show');
+    const content = document.getElementById('historique-content');
+    const [ecoles, classes] = await Promise.all([apiGet('/ecoles'), apiGet('/classes')]);
+    if (!ecoles || !classes) { content.innerHTML = '<div class="empty-state">Erreur de chargement.</div>'; return; }
+
+    let totalEleves = 0;
+    const detailsClasses = [];
+    for (const c of classes) {
+      const eleves = await apiGet(`/eleves?classe_id=${c.id}`);
+      const nb = eleves ? eleves.length : 0;
+      totalEleves += nb;
+      detailsClasses.push({...c, nb_eleves: nb});
+    }
+
+    content.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
+        <div style="background:rgba(26,35,126,0.06);border-radius:10px;padding:.75rem;text-align:center">
+          <div style="font-size:1.5rem;font-weight:900;color:var(--navy);font-family:'Playfair Display',serif">${ecoles.length}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">École(s)</div>
+        </div>
+        <div style="background:rgba(0,137,123,0.06);border-radius:10px;padding:.75rem;text-align:center">
+          <div style="font-size:1.5rem;font-weight:900;color:var(--emerald);font-family:'Playfair Display',serif">${classes.length}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">Classe(s)</div>
+        </div>
+        <div style="background:rgba(255,152,0,0.06);border-radius:10px;padding:.75rem;text-align:center">
+          <div style="font-size:1.5rem;font-weight:900;color:#FF9800;font-family:'Playfair Display',serif">${totalEleves}</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">Élève(s)</div>
+        </div>
+      </div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.5px">Détail des classes</div>
+      ${detailsClasses.length === 0 ? '<div class="empty-state" style="padding:1rem">Aucune classe enregistrée.</div>' :
+        detailsClasses.map(c => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .85rem;border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem">
+            <div>
+              <div style="font-size:.85rem;font-weight:700;color:var(--navy)">${c.nom} — ${c.matiere}</div>
+              <div style="font-size:.72rem;color:var(--text-muted)">Coeff. ${c.coefficient} · ${c.type_periode} · ${c.annee_scolaire}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:1rem;font-weight:900;color:var(--emerald)">${c.nb_eleves}</div>
+              <div style="font-size:.68rem;color:var(--text-muted)">élèves</div>
+            </div>
+          </div>`).join('')}
+    `;
   }
 
   function fermerModal(id){document.getElementById(id).classList.remove('show');}

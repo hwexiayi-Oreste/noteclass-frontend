@@ -10,22 +10,22 @@
   :root{--navy:#1A237E;--emerald:#00897B;--gray:#F5F6FA;--border:#E8EDF2;--text:#1C1C2E}
   body{font-family:'DM Sans',sans-serif;background:var(--gray);min-height:100vh}
 
-  /* LOGIN */
   .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
-  .login-card{background:white;border-radius:20px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 4px 40px rgba(26,35,126,0.12)}
-  .login-logo{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--navy);text-align:center;margin-bottom:8px}
+  .login-card{background:white;border-radius:20px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 4px 40px rgba(26,35,126,0.12)}
+  .login-logo{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--navy);text-align:center;margin-bottom:4px}
   .login-logo span{color:var(--emerald)}
   .login-sub{text-align:center;font-size:.85rem;color:#888;margin-bottom:28px}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
   .field input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .2s}
   .field input:focus{border-color:var(--navy)}
-  .btn-login{width:100%;padding:13px;background:var(--navy);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+  .btn-login{width:100%;padding:13px;background:var(--navy);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .2s}
   .btn-login:hover{background:#283593}
-  .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;background:#fdecea;color:#e53935;border:1px solid #f5c6cb}
+  .btn-login:disabled{opacity:.6;cursor:not-allowed}
+  .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
   .alert.show{display:block}
+  .alert.error{background:#fdecea;color:#e53935;border:1px solid #f5c6cb}
 
-  /* ADMIN */
   .admin-wrap{display:none}
   .topbar{background:var(--navy);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
   .topbar-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:white}
@@ -42,7 +42,7 @@
   .stat-lbl{font-size:.78rem;color:#888;margin-top:4px}
 
   .section-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:900;color:var(--navy);margin-bottom:14px}
-  .search-box{display:flex;align-items:center;gap:8px;background:white;border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;margin-bottom:16px;width:280px}
+  .search-box{display:flex;align-items:center;gap:8px;background:white;border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;margin-bottom:16px;max-width:300px}
   .search-box input{border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:.88rem;width:100%}
 
   .table-wrap{background:white;border-radius:16px;border:1px solid var(--border);overflow:hidden}
@@ -70,8 +70,7 @@
   .toast.error{background:#e53935}
 
   .empty{text-align:center;padding:40px;color:#aaa;font-size:.9rem}
-  .loading{text-align:center;padding:40px;color:#aaa}
-  .spin{display:inline-block;width:20px;height:20px;border:2px solid rgba(26,35,126,.2);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -84,12 +83,12 @@
   <div class="login-card">
     <div class="login-logo">Note<span>Class</span></div>
     <div class="login-sub">Espace Administration</div>
-    <div class="alert" id="login-alert"></div>
+    <div class="alert error" id="login-alert"></div>
     <div class="field">
       <label>Mot de passe admin</label>
       <input type="password" id="admin-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
     </div>
-    <button class="btn-login" onclick="login()">Accéder</button>
+    <button class="btn-login" id="btn-login" onclick="login()">Accéder</button>
   </div>
 </div>
 
@@ -122,7 +121,7 @@
     <div class="section-title">Gestion des utilisateurs</div>
     <div class="search-box">
       <span>🔍</span>
-      <input type="text" placeholder="Rechercher un utilisateur..." oninput="filterUsers(this.value)">
+      <input type="text" placeholder="Rechercher..." oninput="filterUsers(this.value)">
     </div>
 
     <div class="table-wrap">
@@ -137,7 +136,7 @@
           </tr>
         </thead>
         <tbody id="users-body">
-          <tr><td colspan="5" class="loading"><span class="spin"></span>Chargement...</td></tr>
+          <tr><td colspan="5" class="empty">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
@@ -147,114 +146,68 @@
 <script>
   const API = 'https://noteclass-backend.onrender.com/api';
   const ADMIN_PWD = 'Kol@_Agency9119';
-  const ADMIN_KEY = 'nc_admin_auth';
-  const ADMIN_TOKEN_KEY = 'nc_admin_token';
+  const ADMIN_KEY = 'nc_admin_ok';
 
-  // Vérifier si déjà connecté admin
-  if (sessionStorage.getItem(ADMIN_KEY) === 'ok' && sessionStorage.getItem(ADMIN_TOKEN_KEY)) showAdmin();
-
-  // Ajouter champs email/password dans le formulaire admin
-  document.addEventListener('DOMContentLoaded', () => {
-    const card = document.querySelector('.login-card');
-    const pwdField = document.querySelector('.field');
-    const emailField = document.createElement('div');
-    emailField.className = 'field';
-    emailField.innerHTML = `<label>Email NoteClass</label><input type="email" id="admin-email" placeholder="votre@email.com">`;
-    card.insertBefore(emailField, pwdField);
-  });
+  // Déjà connecté ?
+  if (sessionStorage.getItem(ADMIN_KEY) === '1') showAdmin();
 
   async function login() {
-    const email = document.getElementById('admin-email').value.trim();
     const pwd = document.getElementById('admin-pwd').value;
     const alertEl = document.getElementById('login-alert');
+    const btn = document.getElementById('btn-login');
 
     if (pwd !== ADMIN_PWD) {
-      alertEl.textContent = 'Mot de passe admin incorrect.';
-      alertEl.className = 'alert show';
-      return;
-    }
-    if (!email) {
-      alertEl.textContent = 'Entrez votre email NoteClass.';
-      alertEl.className = 'alert show';
+      alertEl.textContent = 'Mot de passe incorrect.';
+      alertEl.style.display = 'block';
       return;
     }
 
-    // Connexion automatique via l'API
-    alertEl.textContent = '';
-    alertEl.className = 'alert';
-    try {
-      const res = await fetch(`${API}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pwd })
-      });
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Vérification...';
 
-      // Si le mot de passe API échoue, on utilise un token existant dans localStorage
-      let token = localStorage.getItem('nc_token');
+    // Tester l'accès API
+    const res = await fetch(`${API}/admin/users`, {
+      headers: { 'x-admin-key': pwd }
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        token = data.token;
-        localStorage.setItem('nc_token', token);
-      }
-
-      if (!token) {
-        alertEl.textContent = 'Impossible de récupérer le token. Connectez-vous d\'abord sur NoteClass.';
-        alertEl.className = 'alert show';
-        return;
-      }
-
-      // Vérifier accès admin
-      const testRes = await fetch(`${API}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (testRes.status === 403) {
-        alertEl.textContent = 'Accès refusé. Cet email n\'a pas les droits admin.';
-        alertEl.className = 'alert show';
-        return;
-      }
-      if (!testRes.ok) {
-        alertEl.textContent = 'Erreur de connexion à l\'API.';
-        alertEl.className = 'alert show';
-        return;
-      }
-
-      sessionStorage.setItem(ADMIN_KEY, 'ok');
-      sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+    if (res.ok) {
+      sessionStorage.setItem(ADMIN_KEY, '1');
       showAdmin();
-    } catch(e) {
-      alertEl.textContent = 'Erreur réseau. Vérifiez votre connexion.';
-      alertEl.className = 'alert show';
+    } else {
+      alertEl.textContent = 'Erreur de connexion au serveur.';
+      alertEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Accéder';
     }
   }
 
   function logout() {
     sessionStorage.removeItem(ADMIN_KEY);
-    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     location.reload();
   }
 
   function showAdmin() {
     document.getElementById('login-wrap').style.display = 'none';
     document.getElementById('admin-wrap').style.display = 'block';
-    document.getElementById('admin-date').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    document.getElementById('admin-date').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
     chargerUtilisateurs();
   }
 
   let allUsers = [];
 
   async function chargerUtilisateurs() {
-    const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem('nc_token');
-    if (!token) { document.getElementById('users-body').innerHTML = '<tr><td colspan="5" class="empty">Token introuvable. Reconnectez-vous.</td></tr>'; return; }
-
     try {
-      const res = await fetch(`${API}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Erreur API');
+      const res = await fetch(`${API}/admin/users`, {
+        headers: { 'x-admin-key': ADMIN_PWD }
+      });
+      if (!res.ok) throw new Error();
       allUsers = await res.json();
       afficherUsers(allUsers);
       document.getElementById('stat-total').textContent = allUsers.length;
       document.getElementById('stat-pro').textContent = allUsers.filter(u => u.plan === 'pro').length;
       document.getElementById('stat-free').textContent = allUsers.filter(u => u.plan === 'free').length;
     } catch(e) {
-      document.getElementById('users-body').innerHTML = '<tr><td colspan="5" class="empty">Erreur de chargement. Vérifiez votre connexion.</td></tr>';
+      document.getElementById('users-body').innerHTML = '<tr><td colspan="5" class="empty">Erreur de chargement.</td></tr>';
     }
   }
 
@@ -273,8 +226,7 @@
         <td>
           ${u.plan === 'free'
             ? `<button class="btn-toggle btn-to-pro" onclick="changerPlan(${u.id},'pro')">⬆️ Passer Pro</button>`
-            : `<button class="btn-toggle btn-to-free" onclick="changerPlan(${u.id},'free')">⬇️ Repasser Gratuit</button>`
-          }
+            : `<button class="btn-toggle btn-to-free" onclick="changerPlan(${u.id},'free')">⬇️ Repasser Gratuit</button>`}
         </td>
       </tr>`).join('');
   }
@@ -287,17 +239,15 @@
   }
 
   async function changerPlan(userId, plan) {
-    const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem('nc_token');
     const label = plan === 'pro' ? 'Pro' : 'Gratuit';
     if (!confirm(`Passer cet utilisateur en plan ${label} ?`)) return;
-
     try {
       const res = await fetch(`${API}/admin/users/${userId}/plan`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'x-admin-key': ADMIN_PWD, 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan })
       });
-      if (!res.ok) throw new Error('Erreur');
+      if (!res.ok) throw new Error();
       toast(`✅ Plan mis à jour : ${label}`, 'success');
       chargerUtilisateurs();
     } catch(e) {

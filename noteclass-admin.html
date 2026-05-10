@@ -148,24 +148,87 @@
   const API = 'https://noteclass-backend.onrender.com/api';
   const ADMIN_PWD = 'Kol@_Agency9119';
   const ADMIN_KEY = 'nc_admin_auth';
+  const ADMIN_TOKEN_KEY = 'nc_admin_token';
 
-  // Vérifier si déjà connecté
-  if (sessionStorage.getItem(ADMIN_KEY) === 'ok') showAdmin();
+  // Vérifier si déjà connecté admin
+  if (sessionStorage.getItem(ADMIN_KEY) === 'ok' && sessionStorage.getItem(ADMIN_TOKEN_KEY)) showAdmin();
 
-  function login() {
+  // Ajouter champs email/password dans le formulaire admin
+  document.addEventListener('DOMContentLoaded', () => {
+    const card = document.querySelector('.login-card');
+    const pwdField = document.querySelector('.field');
+    const emailField = document.createElement('div');
+    emailField.className = 'field';
+    emailField.innerHTML = `<label>Email NoteClass</label><input type="email" id="admin-email" placeholder="votre@email.com">`;
+    card.insertBefore(emailField, pwdField);
+  });
+
+  async function login() {
+    const email = document.getElementById('admin-email').value.trim();
     const pwd = document.getElementById('admin-pwd').value;
-    const alert = document.getElementById('login-alert');
+    const alertEl = document.getElementById('login-alert');
+
     if (pwd !== ADMIN_PWD) {
-      alert.textContent = 'Mot de passe incorrect.';
-      alert.className = 'alert show';
+      alertEl.textContent = 'Mot de passe admin incorrect.';
+      alertEl.className = 'alert show';
       return;
     }
-    sessionStorage.setItem(ADMIN_KEY, 'ok');
-    showAdmin();
+    if (!email) {
+      alertEl.textContent = 'Entrez votre email NoteClass.';
+      alertEl.className = 'alert show';
+      return;
+    }
+
+    // Connexion automatique via l'API
+    alertEl.textContent = '';
+    alertEl.className = 'alert';
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pwd })
+      });
+
+      // Si le mot de passe API échoue, on utilise un token existant dans localStorage
+      let token = localStorage.getItem('nc_token');
+
+      if (res.ok) {
+        const data = await res.json();
+        token = data.token;
+        localStorage.setItem('nc_token', token);
+      }
+
+      if (!token) {
+        alertEl.textContent = 'Impossible de récupérer le token. Connectez-vous d\'abord sur NoteClass.';
+        alertEl.className = 'alert show';
+        return;
+      }
+
+      // Vérifier accès admin
+      const testRes = await fetch(`${API}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (testRes.status === 403) {
+        alertEl.textContent = 'Accès refusé. Cet email n\'a pas les droits admin.';
+        alertEl.className = 'alert show';
+        return;
+      }
+      if (!testRes.ok) {
+        alertEl.textContent = 'Erreur de connexion à l\'API.';
+        alertEl.className = 'alert show';
+        return;
+      }
+
+      sessionStorage.setItem(ADMIN_KEY, 'ok');
+      sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
+      showAdmin();
+    } catch(e) {
+      alertEl.textContent = 'Erreur réseau. Vérifiez votre connexion.';
+      alertEl.className = 'alert show';
+    }
   }
 
   function logout() {
     sessionStorage.removeItem(ADMIN_KEY);
+    sessionStorage.removeItem(ADMIN_TOKEN_KEY);
     location.reload();
   }
 
@@ -179,8 +242,8 @@
   let allUsers = [];
 
   async function chargerUtilisateurs() {
-    const token = localStorage.getItem('nc_token');
-    if (!token) { document.getElementById('users-body').innerHTML = '<tr><td colspan="5" class="empty">Connectez-vous d\'abord sur NoteClass puis revenez ici.</td></tr>'; return; }
+    const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem('nc_token');
+    if (!token) { document.getElementById('users-body').innerHTML = '<tr><td colspan="5" class="empty">Token introuvable. Reconnectez-vous.</td></tr>'; return; }
 
     try {
       const res = await fetch(`${API}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -224,7 +287,7 @@
   }
 
   async function changerPlan(userId, plan) {
-    const token = localStorage.getItem('nc_token');
+    const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || localStorage.getItem('nc_token');
     const label = plan === 'pro' ? 'Pro' : 'Gratuit';
     if (!confirm(`Passer cet utilisateur en plan ${label} ?`)) return;
 

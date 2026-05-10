@@ -167,7 +167,7 @@
 
     // Tester l'accès API
     const res = await fetch(`${API}/admin/users`, {
-      headers: { 'x-admin-key': pwd }
+      headers: { 'Authorization': 'Bearer ' + pwd }
     });
 
     if (res.ok) {
@@ -198,7 +198,7 @@
   async function chargerUtilisateurs() {
     try {
       const res = await fetch(`${API}/admin/users`, {
-        headers: { 'x-admin-key': ADMIN_PWD }
+        headers: { 'Authorization': 'Bearer ' + ADMIN_PWD }
       });
       if (!res.ok) throw new Error();
       allUsers = await res.json();
@@ -244,7 +244,7 @@
     try {
       const res = await fetch(`${API}/admin/users/${userId}/plan`, {
         method: 'PUT',
-        headers: { 'x-admin-key': ADMIN_PWD, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': 'Bearer ' + ADMIN_PWD, 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan })
       });
       if (!res.ok) throw new Error();
